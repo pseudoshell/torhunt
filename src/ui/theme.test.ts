@@ -10,7 +10,7 @@ import {
 
 describe("theme system", () => {
   it("includes all advertised themes with valid color structures", () => {
-    expect(THEMES.length).toBeGreaterThanOrEqual(8);
+    expect(THEMES.length).toBeGreaterThanOrEqual(16);
     const ids = THEMES.map((t) => t.id);
     expect(ids).toContain("electric-cyan");
     expect(ids).toContain("classic-iris");
@@ -20,6 +20,14 @@ describe("theme system", () => {
     expect(ids).toContain("monochrome-slate");
     expect(ids).toContain("crimson-ruby");
     expect(ids).toContain("synthwave-sunset");
+    expect(ids).toContain("nordic-frost");
+    expect(ids).toContain("tokyo-night");
+    expect(ids).toContain("solarized-dark");
+    expect(ids).toContain("cyber-emerald");
+    expect(ids).toContain("dracula");
+    expect(ids).toContain("gruvbox-dark");
+    expect(ids).toContain("monokai-pro");
+    expect(ids).toContain("deep-ocean");
 
     for (const t of THEMES) {
       expect(t.name).toBeTruthy();

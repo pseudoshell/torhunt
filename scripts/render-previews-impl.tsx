@@ -72,6 +72,7 @@ function fakeQueue(
 }
 
 import { DEFAULT_THEME } from "../src/ui/theme";
+import { DEFAULT_SPINNER } from "../src/ui/spinnerPresets";
 
 function makeStore(
   overrides: Partial<Store> = {},
@@ -81,11 +82,18 @@ function makeStore(
 ): Store {
   const noop = (): void => {};
   return {
-    config: { downloadDir: "~/Downloads/torlink", theme: "electric-cyan", trackers: [] } as Config,
+    config: {
+      downloadDir: "~/Downloads/torlink",
+      theme: "electric-cyan",
+      spinner: "dots",
+      trackers: [],
+    } as Config,
     setConfig: noop,
     theme: DEFAULT_THEME,
     setThemeId: noop,
     cycleTheme: noop,
+    spinner: DEFAULT_SPINNER,
+    setSpinnerId: noop,
     queue: fakeQueue(items, history, seeds),
     view: "browser",
     setView: noop,

@@ -45,8 +45,10 @@ import { Splash } from "./views/Splash";
 import { FolderPrompt } from "./components/FolderPrompt";
 import { TrackersPrompt } from "./components/TrackersPrompt";
 import { ThemePrompt } from "./components/ThemePrompt";
+import { SpinnerPrompt } from "./components/SpinnerPrompt";
 import { footerHints } from "./keymap";
 import { COLOR, ICON, DEFAULT_THEME, getTheme, nextTheme, type Theme } from "./theme";
+import { DEFAULT_SPINNER, getSpinner, type SpinnerPreset } from "./spinnerPresets";
 import { useMouseWheel } from "./hooks/useMouseWheel";
 import { VERSION } from "../version";
 import { fetchLatestVersion, isNewer } from "../update/version";
@@ -101,6 +103,8 @@ export function App({
   const [editingTrackers, setEditingTrackers] = useState(false);
   const [editingTheme, setEditingTheme] = useState(false);
   const [previewThemeId, setPreviewThemeId] = useState<string | null>(null);
+  const [editingSpinner, setEditingSpinner] = useState(false);
+  const [previewSpinnerId, setPreviewSpinnerId] = useState<string | null>(null);
   // A result waiting on the "download to" prompt (D); null when the prompt is
   // closed. lastDownloadToDir pre-fills the next prompt so queueing a batch
   // into the same alternate folder only costs one typed path per session.
@@ -268,6 +272,22 @@ export function App({
     const next = nextTheme(config.theme);
     setThemeId(next.id);
   }, [config, setThemeId]);
+
+  const spinner: SpinnerPreset = useMemo(
+    () => getSpinner(previewSpinnerId ?? config?.spinner),
+    [previewSpinnerId, config?.spinner],
+  );
+
+  const setSpinnerId = useCallback(
+    (spinnerId: string) => {
+      if (!config) return;
+      const next = getSpinner(spinnerId);
+      if (config.spinner === next.id) return;
+      setConfig({ ...config, spinner: next.id });
+      setNotice(`Spinner: ${next.name}`);
+    },
+    [config, setConfig],
+  );
 
   const setDownloadDir = useCallback(
     (raw: string) => {
@@ -476,6 +496,8 @@ export function App({
       theme,
       setThemeId,
       cycleTheme,
+      spinner,
+      setSpinnerId,
       queue,
       view,
       setView,
@@ -483,7 +505,15 @@ export function App({
       submitQuery,
       section,
       setSection,
-      region: showHelp || editingFolder || editingTrackers || editingTheme || pendingDownload ? "help" : region,
+      region:
+        showHelp ||
+        editingFolder ||
+        editingTrackers ||
+        editingTheme ||
+        editingSpinner ||
+        pendingDownload
+          ? "help"
+          : region,
       setRegion,
       captureMode,
       setCaptureMode,
@@ -514,6 +544,8 @@ export function App({
     theme,
     setThemeId,
     cycleTheme,
+    spinner,
+    setSpinnerId,
     view,
     query,
     submitQuery,
@@ -523,6 +555,7 @@ export function App({
     editingFolder,
     editingTrackers,
     editingTheme,
+    editingSpinner,
     pendingDownload,
     captureMode,
     downloadFocus,
@@ -550,7 +583,7 @@ export function App({
         quitAll();
         return;
       }
-      if (editingFolder || editingTrackers || editingTheme || pendingDownload) return; // the prompt owns input (its own esc + enter)
+      if (editingFolder || editingTrackers || editingTheme || editingSpinner || pendingDownload) return; // the prompt owns input (its own esc + enter)
       if (captureMode === "text") return;
       if (showHelp) {
         setShowHelp(false);
@@ -573,6 +606,11 @@ export function App({
       if (input === "T") {
         setShowHelp(false);
         setEditingTheme(true);
+        return;
+      }
+      if (input === "L") {
+        setShowHelp(false);
+        setEditingSpinner(true);
         return;
       }
       if (input === "m") {
@@ -681,6 +719,27 @@ export function App({
           </Box>
         ) : null}
 
+        {editingSpinner ? (
+          <Box marginTop={1}>
+            <SpinnerPrompt
+              width={Math.max(24, Math.min(cols - 4, 78))}
+              currentSpinnerId={config?.spinner ?? DEFAULT_SPINNER.id}
+              onPreview={(id) => {
+                setPreviewSpinnerId(id);
+              }}
+              onSelect={(id) => {
+                setEditingSpinner(false);
+                setPreviewSpinnerId(null);
+                setSpinnerId(id);
+              }}
+              onCancel={() => {
+                setEditingSpinner(false);
+                setPreviewSpinnerId(null);
+              }}
+            />
+          </Box>
+        ) : null}
+
         {pendingDownload ? (
           <Box marginTop={1}>
             <FolderPrompt
@@ -702,7 +761,16 @@ export function App({
         <Box
           height={bodyH}
           marginTop={compact ? 0 : 1}
-          display={showHelp || editingFolder || editingTrackers || editingTheme || pendingDownload ? "none" : "flex"}
+          display={
+            showHelp ||
+            editingFolder ||
+            editingTrackers ||
+            editingTheme ||
+            editingSpinner ||
+            pendingDownload
+              ? "none"
+              : "flex"
+          }
           overflow="hidden"
         >
           <Sidebar />
@@ -718,7 +786,18 @@ export function App({
         </Box>
 
         {showFooter ? (
-          <Box display={showHelp || editingFolder || editingTrackers || editingTheme || pendingDownload ? "none" : "flex"}>
+          <Box
+            display={
+              showHelp ||
+              editingFolder ||
+              editingTrackers ||
+              editingTheme ||
+              editingSpinner ||
+              pendingDownload
+                ? "none"
+                : "flex"
+            }
+          >
             <Footer hints={footerHints(region, section, downloadFocus, seedFocus, resultFocus)} />
           </Box>
         ) : null}

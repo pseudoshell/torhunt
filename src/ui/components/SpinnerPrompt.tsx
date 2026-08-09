@@ -2,100 +2,100 @@ import { useContext, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { Panel } from "./Panel";
 import { PromptHints } from "./PromptHints";
-import { THEMES, getTheme, ICON, type Theme } from "../theme";
+import { Spinner } from "./Spinner";
+import { SPINNERS, type SpinnerPreset } from "../spinnerPresets";
 import { wrapStep, windowStart } from "../move";
+import { DEFAULT_THEME, ICON } from "../theme";
 import { StoreContext } from "../store";
 
-interface ThemePromptProps {
+interface SpinnerPromptProps {
   width: number;
-  currentThemeId: string;
-  onPreview?: (themeId: string) => void;
-  onSelect: (themeId: string) => void;
+  currentSpinnerId: string;
+  onPreview?: (spinnerId: string) => void;
+  onSelect: (spinnerId: string) => void;
   onCancel: () => void;
 }
 
-export function ThemePrompt({
+export function SpinnerPrompt({
   width,
-  currentThemeId,
+  currentSpinnerId,
   onPreview,
   onSelect,
   onCancel,
-}: ThemePromptProps) {
+}: SpinnerPromptProps) {
   const store = useContext(StoreContext);
+  const theme = store?.theme ?? DEFAULT_THEME;
   const rows = store?.rows ?? 24;
   const initialIdx = Math.max(
     0,
-    THEMES.findIndex((t) => t.id === currentThemeId),
+    SPINNERS.findIndex((s) => s.id === currentSpinnerId),
   );
   const [cursor, setCursor] = useState(initialIdx);
 
   useInput((input, key) => {
     if (key.upArrow || input === "k") {
-      const next = wrapStep(cursor, -1, THEMES.length);
+      const next = wrapStep(cursor, -1, SPINNERS.length);
       setCursor(next);
-      onPreview?.(THEMES[next]!.id);
+      onPreview?.(SPINNERS[next]!.id);
     } else if (key.downArrow || input === "j") {
-      const next = wrapStep(cursor, 1, THEMES.length);
+      const next = wrapStep(cursor, 1, SPINNERS.length);
       setCursor(next);
-      onPreview?.(THEMES[next]!.id);
+      onPreview?.(SPINNERS[next]!.id);
     } else if (key.return) {
-      onSelect(THEMES[cursor]!.id);
+      onSelect(SPINNERS[cursor]!.id);
     } else if (key.escape) {
       onCancel();
     }
   });
 
-  const activeTheme = getTheme(THEMES[cursor]?.id ?? currentThemeId);
-
   // Fit within terminal: reserve rows for header(3) + panel borders(2) + hints(2) + margin
   const maxVisible = Math.max(3, rows - 8);
-  const visibleCount = Math.min(THEMES.length, maxVisible);
-  const start = windowStart(cursor, THEMES.length, visibleCount);
-  const visible = THEMES.slice(start, start + visibleCount);
+  const visibleCount = Math.min(SPINNERS.length, maxVisible);
+  const start = windowStart(cursor, SPINNERS.length, visibleCount);
+  const visible = SPINNERS.slice(start, start + visibleCount);
 
   return (
     <Box flexDirection="column" width={width}>
       <Panel
-        title="color themes"
+        title="spinner styles"
         width={width}
         focused
         height={visibleCount + 1}
       >
         <Box flexDirection="column">
-          {visible.map((t: Theme, vi: number) => {
+          {visible.map((s: SpinnerPreset, vi: number) => {
             const idx = start + vi;
             const isSelected = idx === cursor;
-            const isCurrent = t.id === currentThemeId;
+            const isCurrent = s.id === currentSpinnerId;
             return (
-              <Box key={t.id} justifyContent="space-between">
+              <Box key={s.id} justifyContent="space-between">
                 <Box>
                   <Box width={2} flexShrink={0}>
-                    <Text color={activeTheme.colors.accent} bold>
+                    <Text color={theme.colors.accent} bold>
                       {isSelected ? ICON.pointer : " "}
                     </Text>
+                  </Box>
+                  <Box width={10} flexShrink={0}>
+                    <Spinner preset={s} />
                   </Box>
                   <Box width={18} flexShrink={0}>
                     <Text
                       bold={isSelected}
-                      color={isSelected ? activeTheme.colors.accent : undefined}
+                      color={isSelected ? theme.colors.accent : undefined}
                       dimColor={!isSelected}
                     >
-                      {t.name}
+                      {s.name}
                     </Text>
                   </Box>
                   <Box flexGrow={1} minWidth={0}>
                     <Text dimColor wrap="truncate-end">
-                      {t.description}
+                      {s.description}
                     </Text>
                   </Box>
                 </Box>
                 <Box flexShrink={0} marginLeft={1}>
-                  <Text color={t.colors.accent}>█</Text>
-                  <Text color={t.colors.good}>█</Text>
-                  <Text color={t.colors.alt}>█</Text>
-                  <Text color={t.colors.rule}>█</Text>
                   {isCurrent ? (
-                    <Text color={activeTheme.colors.good} bold>
+                    <Text color={theme.colors.good} bold>
                       {" ✓"}
                     </Text>
                   ) : (
@@ -108,7 +108,7 @@ export function ThemePrompt({
         </Box>
       </Panel>
       <Box marginTop={1}>
-        <PromptHints submitLabel="apply theme" />
+        <PromptHints submitLabel="apply spinner" />
       </Box>
     </Box>
   );

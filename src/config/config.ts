@@ -6,12 +6,14 @@ export interface Config {
   downloadDir: string;
   trackers: string[];
   theme: string;
+  spinner: string;
 }
 
 export const defaultConfig: Config = {
   downloadDir: defaultDownloadDir,
   trackers: [],
   theme: "electric-cyan",
+  spinner: "dots",
 };
 
 export async function loadConfig(): Promise<Config> {
@@ -32,6 +34,10 @@ export async function loadConfig(): Promise<Config> {
         ? parsed.trackers.filter((t): t is string => typeof t === "string" && t.length > 0)
         : [],
       theme: typeof parsed.theme === "string" && parsed.theme ? parsed.theme : defaultConfig.theme,
+      spinner:
+        typeof parsed.spinner === "string" && parsed.spinner
+          ? parsed.spinner
+          : defaultConfig.spinner,
     };
     return cfg;
   } catch {

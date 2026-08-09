@@ -4,22 +4,21 @@ import { LOGO_LINES, SPROUT_CELLS } from "../logo";
 import { DEFAULT_THEME, lerpHex, type Theme } from "../theme";
 import { StoreContext } from "../store";
 
-const HIGHLIGHT = "#ffffff";
-
 function getSheen(t: number, theme: Theme): string {
   const top = theme.colors.bright;
   const accent = theme.colors.accent;
   const base = theme.colors.base;
   const shade = theme.colors.shade;
-  if (t < 0.15) return lerpHex(HIGHLIGHT, top, t / 0.15);
+  const peak = theme.colors.sheenPeak || "#ffffff";
+  if (t < 0.15) return lerpHex(peak, top, t / 0.15);
   if (t < 0.4) return lerpHex(top, accent, (t - 0.15) / 0.25);
   if (t < 0.7) return lerpHex(accent, base, (t - 0.4) / 0.3);
   return lerpHex(base, shade, (t - 0.7) / 0.3);
 }
 
-export function Logo() {
+export function Logo({ theme: customTheme }: { theme?: Theme } = {}) {
   const store = useContext(StoreContext);
-  const theme = store?.theme ?? DEFAULT_THEME;
+  const theme = customTheme ?? store?.theme ?? DEFAULT_THEME;
   const rows = LOGO_LINES.length;
 
   return (

@@ -60,7 +60,7 @@ export function Sidebar() {
         <Box key={gi} flexDirection="column" marginTop={gi > 0 ? 1 : 0}>
           {group.title ? (
             <Box paddingLeft={1} marginBottom={0}>
-              <Text dimColor bold>
+              <Text color={theme.colors.rule} bold>
                 {group.title}
               </Text>
             </Box>
@@ -74,13 +74,13 @@ export function Sidebar() {
                 <Box>
                   <Box width={GUTTER} flexShrink={0}>
                     {selected ? (
-                      <Text color={focused ? theme.colors.bright : theme.colors.rule} bold={focused}>
+                      <Text color={focused ? theme.colors.accent : theme.colors.alt} bold={focused}>
                         {ICON.pointer}
                       </Text>
                     ) : null}
                   </Box>
                   <Text
-                    color={selected ? (focused ? theme.colors.accent : theme.colors.alt) : undefined}
+                    color={selected ? (focused ? theme.colors.text : theme.colors.alt) : undefined}
                     dimColor={!selected}
                     bold={selected && focused}
                   >
@@ -97,7 +97,7 @@ export function Sidebar() {
                       }
                       bold={selected}
                     >
-                      {`(${count})`}
+                      {`${count}`}
                     </Text>
                   </Box>
                 ) : null}

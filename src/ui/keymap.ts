@@ -21,6 +21,7 @@ export const HELP_GROUPS: HelpGroup[] = [
       { keys: "o", label: "Default download folder" },
       { keys: "t", label: "Extra trackers" },
       { keys: "T", label: "Color theme" },
+      { keys: "L", label: "Spinner style" },
       { keys: "q", label: "Quit" },
     ],
   },

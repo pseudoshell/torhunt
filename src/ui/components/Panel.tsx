@@ -15,33 +15,38 @@ interface PanelProps {
 export function Panel({ title, width, focused, count, height, children }: PanelProps) {
   const store = useContext(StoreContext);
   const theme = store?.theme ?? DEFAULT_THEME;
-  const color = focused ? theme.colors.accent : theme.colors.rule;
+  const borderColor = focused ? theme.colors.accent : theme.colors.rule;
+  const titleColor = focused ? theme.colors.bright : theme.colors.alt;
   const w = Math.max(10, width);
-  const cap = title.charAt(0).toUpperCase() + title.slice(1);
+  const cap = title.toUpperCase();
   const label = count ? `${cap} ${count}` : cap;
-  const fill = Math.max(0, w - 5 - label.length);
+
+  // Build a cleaner top bar:  ┌─[ TITLE ]──────────────────┐
+  // Fixed chars: ┌─ (2) + [ (2) + ] (2) + ┐ (1) = 7
+  const fixedChars = 7;
+  const fillLen = Math.max(0, w - fixedChars - label.length);
 
   return (
     <Box flexDirection="column" width={w}>
       <Box>
-        <Text color={color}>{"╭─ "}</Text>
-        <Text bold color={color}>
+        <Text color={borderColor}>{"┌─[ "}</Text>
+        <Text bold color={titleColor}>
           {label}
         </Text>
-        <Text color={color}>{` ${"─".repeat(fill)}╮`}</Text>
+        <Text color={borderColor}>{` ]${"─".repeat(fillLen)}┐`}</Text>
       </Box>
       <Box
         width={w}
         height={height}
         flexGrow={height ? 0 : 1}
         flexDirection="column"
-        borderStyle="round"
-        borderTop={false}
-        borderColor={color}
         paddingX={1}
         overflow="hidden"
       >
         {children}
+      </Box>
+      <Box>
+        <Text color={borderColor}>{`└${"─".repeat(Math.max(0, w - 2))}┘`}</Text>
       </Box>
     </Box>
   );

@@ -28,6 +28,7 @@ export type DownloadFocus = "downloading" | "paused" | "failed" | "recent";
 export type SeedFocus = "seeding" | "paused" | "missing" | "idle";
 
 import type { Theme } from "./theme";
+import type { SpinnerPreset } from "./spinnerPresets";
 
 export type ResultFocus = "list" | "detail";
 
@@ -37,6 +38,8 @@ export interface Store {
   theme: Theme;
   setThemeId: (themeId: string) => void;
   cycleTheme: () => void;
+  spinner: SpinnerPreset;
+  setSpinnerId: (spinnerId: string) => void;
   queue: DownloadQueue;
 
   view: View;

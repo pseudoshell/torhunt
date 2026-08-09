@@ -138,15 +138,23 @@ export function fakeQueue(
 // imported here: that module generates previews at import time. Typing the
 // literal as Store keeps the same drift guard: a new Store field fails compile.
 import { DEFAULT_THEME } from "./theme";
+import { DEFAULT_SPINNER } from "./spinnerPresets";
 
 export function makeTestStore(overrides: Partial<Store> = {}): Store {
   const noop = (): void => {};
   return {
-    config: { downloadDir: "~/Downloads/torlink", theme: "electric-cyan", trackers: [] } as Config,
+    config: {
+      downloadDir: "~/Downloads/torlink",
+      theme: "electric-cyan",
+      spinner: "dots",
+      trackers: [],
+    } as Config,
     setConfig: noop,
     theme: DEFAULT_THEME,
     setThemeId: noop,
     cycleTheme: noop,
+    spinner: DEFAULT_SPINNER,
+    setSpinnerId: noop,
     queue: fakeQueue(),
     view: "browser",
     setView: noop,

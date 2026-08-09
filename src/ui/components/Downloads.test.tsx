@@ -69,7 +69,7 @@ describe("Downloads clear/remove keys", () => {
     const u = mount();
     await vi.waitFor(() => expect(u.frame()).toContain("Recently downloaded  (3)"));
     u.press("j");
-    await vi.waitFor(() => expect(lineWith(u, "ubuntu 24.04")).toContain("❯"));
+    await vi.waitFor(() => expect(lineWith(u, "ubuntu 24.04")).toContain("→"));
 
     u.press("c");
     await vi.waitFor(() => expect(u.frame()).toContain("Recently downloaded  (2)"));
@@ -82,7 +82,7 @@ describe("Downloads clear/remove keys", () => {
     const u = mount();
     await vi.waitFor(() => expect(u.frame()).toContain("Recently downloaded  (3)"));
     u.press("j");
-    await vi.waitFor(() => expect(lineWith(u, "ubuntu 24.04")).toContain("❯"));
+    await vi.waitFor(() => expect(lineWith(u, "ubuntu 24.04")).toContain("→"));
 
     u.press("C");
     await vi.waitFor(() => expect(u.frame()).not.toContain("Recently downloaded"));
@@ -100,7 +100,7 @@ describe("Downloads clear/remove keys", () => {
     await tick();
     // Navigation still works afterwards, and the history is untouched.
     u.press("j");
-    await vi.waitFor(() => expect(lineWith(u, "ubuntu 24.04")).toContain("❯"));
+    await vi.waitFor(() => expect(lineWith(u, "ubuntu 24.04")).toContain("→"));
     expect(u.frame()).toContain("Recently downloaded  (3)");
   });
 
@@ -108,12 +108,12 @@ describe("Downloads clear/remove keys", () => {
     const u = mount();
     await vi.waitFor(() => expect(u.frame()).toContain("Recently downloaded  (3)"));
     u.press("j");
-    await vi.waitFor(() => expect(lineWith(u, "ubuntu 24.04")).toContain("❯"));
+    await vi.waitFor(() => expect(lineWith(u, "ubuntu 24.04")).toContain("→"));
 
     u.press("x");
     await tick();
     u.press("j");
-    await vi.waitFor(() => expect(lineWith(u, "debian 12")).toContain("❯"));
+    await vi.waitFor(() => expect(lineWith(u, "debian 12")).toContain("→"));
     expect(u.frame()).toContain("Recently downloaded  (3)");
   });
 });

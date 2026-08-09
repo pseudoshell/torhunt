@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Box, Text, useInput } from "ink";
 import { useStore, CATEGORIES } from "../store";
 import { Spinner } from "./Spinner";
+import { SearchBar } from "./SearchBar";
 import { TextField } from "./TextField";
 import { Panel } from "./Panel";
 import { Rule } from "./Rule";
@@ -174,17 +175,16 @@ export function Results() {
   }, [focused]);
 
   useEffect(() => {
-  }, [mode, setCaptureMode]);
-
-  useEffect(() => {
+    if (!focused) return;
     setResultFocus(mode === "detail" ? "detail" : "list");
     return () => setResultFocus(null);
-  }, [mode, setResultFocus]);
+  }, [mode, focused, setResultFocus]);
 
   const clamped = Math.min(cursor, Math.max(0, results.length - 1));
+  const searchH = 4; // bordered search: top + content + bottom + gap
   const filterH = mode === "filter" || textFilter.trim() ? 1 : 0;
-  const panelOuter = Math.max(5, listRows - 1 - filterH);
-  const listHeight = Math.max(3, panelOuter - (results.length > 0 ? 6 : 4));
+  const panelOuter = resultsPanelOuter(listRows, searchH + filterH);
+  const listHeight = Math.max(3, panelOuter - 5); // -5: panel top + bottom borders + status + header + gap
   const pageJump = Math.max(1, listHeight - 1);
 
   const openDownload = (r: TorrentResult): void =>
@@ -220,6 +220,10 @@ export function Results() {
 
   useInput(
     (input, key) => {
+      if (input === "/") {
+        setMode("search");
+        return;
+      }
       if (key.upArrow || input === "k") {
         if (results.length > 0 && clamped > 0) moveTo(clamped - 1);
         else setMode("search");
@@ -318,52 +322,23 @@ export function Results() {
     [search.perSource],
   );
   const activeCat = CATEGORIES.find((c) => c.key === section);
-  const tabSources = activeCat?.group
-    ? SOURCES.filter((s) => s.groups?.includes(activeCat.group!))
-    : SOURCES;
-  const tabErrored =
-    tabSources.length > 0 && tabSources.every((s) => search.perSource[s.id]?.error);
-  // Only the active tab's sources hold its spinner; other groups' stragglers
-  // stream in silently.
-  const pending = tabSources.some((s) => search.perSource[s.id]?.loading);
-  const showStats = useMemo(
-    () => results.some((r) => r.sizeBytes > 0 || r.seeders > 0),
-    [results],
-  );
-  const numW = Math.max(2, String(results.length).length);
 
-  const outageCodes = (sources: readonly Source[]): string => {
-    const codes = [
-      ...new Set(sources.map((s) => search.perSource[s.id]?.code).filter(Boolean)),
-    ];
-    return codes.length ? ` (${codes.join(", ")})` : "";
-  };
-
-  const sortNote = sort === "none" ? "" : `  ${ICON.dot} sort: ${sortLabel(sort)}`;
-  const filterNote = hideDead ? `  ${ICON.dot} alive only` : "";
-  const head = browsing
-    ? "newest across all sources"
-    : `${results.length} result${results.length === 1 ? "" : "s"}`;
-
-  const status = () => {
-    if (pending) {
-      // Rows are already usable: the settled header simply carries a spinner
-      // until the tab's last source lands.
-      if (results.length > 0)
-        return (
-          <Text>
-            <Text dimColor>{`${head}${sortNote}${filterNote}  `}</Text>
-            <Spinner />
-          </Text>
-        );
-      return <Spinner label={browsing ? "Loading…" : "Searching…"} />;
-    }
+  const status = (): ReactNode => {
+    if (search.loading) return <Spinner label={browsing ? "Fetching latest…" : "Searching…"} />;
+    const head = browsing
+      ? `Latest from ${activeCat?.label ?? "all categories"}`
+      : `Found ${results.length} result${results.length === 1 ? "" : "s"}`;
+    const sortNote = sort === "none" ? "" : ` · Sorted by ${sortLabel(sort)}`;
+    const filterNote = textFilter.trim() ? ` · Filtered by "${truncate(textFilter.trim(), 20)}"` : "";
     if (results.length === 0) {
-      if (erroredCount >= search.total) {
-        const downAll = SOURCES.filter((s) => search.perSource[s.id]?.error);
+      const tabSources = activeCat?.group
+        ? SOURCES.filter((s) => s.groups?.includes(activeCat.group!))
+        : SOURCES;
+      const tabErrored = tabSources.every((s) => search.perSource[s.id]?.error);
+      if (search.total === 0) {
         return (
           <Text color={COLOR.warn}>
-            {`Couldn't reach any source. They may be down${outageCodes(downAll)}.`}
+            No sources enabled for this tab.
           </Text>
         );
       }
@@ -372,25 +347,10 @@ export function Results() {
         const who = down.length === 1 ? "The source" : `All ${down.length} sources`;
         return (
           <Text color={COLOR.warn}>
-            {`Couldn't reach ${activeCat.label}. ${who} may be down${outageCodes(down)}.`}
+            {`Couldn't reach ${activeCat.label}. ${who} may be down.`}
           </Text>
         );
       }
-      if (hideDead) {
-        const cat = CATEGORIES.find((c) => c.key === section);
-        const base = cat?.group
-          ? search.results.filter((r) => getSource(r.source).groups?.includes(cat.group!))
-          : search.results;
-        if (base.length > 0 && base.every((r) => r.seeders <= 0)) {
-          return (
-            <Text dimColor>
-              All results have zero seeders. Press z to show them.
-            </Text>
-          );
-        }
-      }
-      if (search.results.length > 0 && activeCat?.group)
-        return <Text dimColor>{`No ${activeCat.label.toLowerCase()} results yet. Try another tab or a search.`}</Text>;
       return (
         <Text dimColor>
           {browsing ? "Nothing new right now." : `No results for "${truncate(query, 28)}".`}
@@ -400,6 +360,12 @@ export function Results() {
     const note = erroredCount > 0 ? `  (${erroredCount} source${erroredCount === 1 ? "" : "s"} down)` : "";
     return <Text dimColor>{`${head}${note}${sortNote}${filterNote}`}</Text>;
   };
+
+  const showStats = useMemo(
+    () => results.some((r) => r.sizeBytes > 0 || r.seeders > 0),
+    [results],
+  );
+  const numW = Math.max(2, String(results.length).length);
 
   const sortMark = (field: SortField, label: string): ReactNode => {
     if (sort === "none" || sort.field !== field) return label;
@@ -417,81 +383,54 @@ export function Results() {
 
   return (
     <Box flexDirection="column">
-      <Panel
-        title={mode === "detail" ? "details" : browsing ? "latest" : "results"}
+      <SearchBar
         width={contentWidth}
-        focused={focused}
-        count={mode === "detail" ? undefined : count}
-        height={panelOuter}
-      >
-        {mode === "detail" && detail ? (
-          <Detail r={detail} width={Math.max(10, contentWidth - 4)} theme={theme} />
-        ) : (
-          <>
-            {/* Unified Command Center Search Row */}
-            <Box width={Math.max(10, contentWidth - 4)} justifyContent="space-between" alignItems="center">
-              <Box flexGrow={1} minWidth={0}>
-                <Text color={mode === "search" ? theme.colors.accent : theme.colors.alt} bold>
-                  {`${ICON.pointer} `}
-                </Text>
-                {mode === "search" ? (
-                  <TextField
-                    defaultValue={query}
-                    placeholder={PLACEHOLDER}
-                    width={Math.max(1, contentWidth - 25)}
-                    onSubmit={onSubmit}
-                    onExitDown={() => setMode("list")}
-                    onExitLeft={() => setRegion("sidebar")}
-                  />
-                ) : (
-                  <Text
-                    color={query ? theme.colors.text : undefined}
-                    dimColor={!query}
-                    wrap="truncate-end"
-                  >
-                    {query || PLACEHOLDER}
-                  </Text>
-                )}
-              </Box>
-              {sort !== "none" ? (
-                <Box flexShrink={0} marginLeft={1}>
-                  <Text dimColor>[sort: </Text>
-                  <Text color={theme.colors.accent}>{sortLabel(sort)}</Text>
-                  <Text dimColor>]</Text>
-                </Box>
-              ) : null}
-            </Box>
-
-            {/* Divider between search and results table */}
-            <Rule width={Math.max(10, contentWidth - 4)} color={theme.colors.rule} />
-
-            <Box>{status()}</Box>
-            <Box flexDirection="column" marginTop={results.length > 0 ? 1 : 0}>
+        value={query}
+        editing={mode === "search"}
+        placeholder={PLACEHOLDER}
+        onSubmit={onSubmit}
+        onExitDown={() => setMode("list")}
+        onExitLeft={() => setRegion("sidebar")}
+      />
+      <Box>
+        <Panel
+          title={mode === "detail" ? "details" : browsing ? "latest" : "results"}
+          width={contentWidth}
+          focused={focused && mode !== "search"}
+          count={mode === "detail" ? undefined : count}
+          height={panelOuter}
+        >
+          {mode === "detail" && detail ? (
+            <Detail r={detail} width={Math.max(10, contentWidth - 4)} theme={theme} />
+          ) : (
+            <>
+              <Box>{status()}</Box>
+              <Box flexDirection="column" marginTop={results.length > 0 ? 0 : 0}>
                 {results.length > 0 ? (
                   <Box>
                     <Box width={GUTTER} flexShrink={0} />
                     <Box width={numW} flexShrink={0} justifyContent="flex-end">
-                      <Text bold dimColor>#</Text>
+                      <Text color={theme.colors.rule}>#</Text>
                     </Box>
                     <Box flexGrow={1} minWidth={0} marginLeft={1}>
-                      <Text bold dimColor>Name</Text>
+                      <Text color={theme.colors.rule}>NAME</Text>
                     </Box>
                     {showStats ? (
                       <>
                         <Box width={10} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-                          <Text bold dimColor>{sortMark("size", "Size")}</Text>
+                          <Text color={theme.colors.rule}>{sortMark("size", "SIZE")}</Text>
                         </Box>
                         <Box width={9} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-                          <Text bold dimColor>{sortMark("seeders", "Seed:Lch")}</Text>
+                          <Text color={theme.colors.rule}>{sortMark("seeders", "S:L")}</Text>
                         </Box>
                       </>
                     ) : (
                       <Box width={12} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-                        <Text bold dimColor>Added</Text>
+                        <Text color={theme.colors.rule}>ADDED</Text>
                       </Box>
                     )}
                     <Box width={4} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-                      <Text bold dimColor>{sortMark("source", "Src")}</Text>
+                      <Text color={theme.colors.rule}>{sortMark("source", "SRC")}</Text>
                     </Box>
                   </Box>
                 ) : null}
@@ -502,15 +441,15 @@ export function Results() {
                   return (
                     <Box key={r.infoHash}>
                       <Box width={GUTTER} flexShrink={0}>
-                        <Text color={theme.colors.accent}>{here ? ICON.pointer : ""}</Text>
+                        <Text color={theme.colors.accent} bold>{here ? ICON.pointer : " "}</Text>
                       </Box>
                       <Box width={numW} flexShrink={0} justifyContent="flex-end">
-                        <Text dimColor>{index + 1}</Text>
+                        <Text color={here ? theme.colors.accent : theme.colors.rule}>{index + 1}</Text>
                       </Box>
                       <Box flexGrow={1} minWidth={0} marginLeft={1}>
                         <Text
                           wrap="truncate-end"
-                          color={here ? theme.colors.accent : undefined}
+                          color={here ? theme.colors.text : undefined}
                           dimColor={!here}
                           bold={here}
                         >
@@ -521,32 +460,29 @@ export function Results() {
                         <>
                           <Box width={10} flexShrink={0} marginLeft={1} justifyContent="flex-end">
                             <Text
+                              color={here ? theme.colors.alt : undefined}
                               dimColor={!here}
-                              bold={here}
-                            >{r.sizeBytes > 0 ? formatBytes(r.sizeBytes) : "-"}
+                            >{r.sizeBytes > 0 ? formatBytes(r.sizeBytes) : "─"}
                             </Text>
                           </Box>
-                          <Box width={10} flexShrink={0} marginLeft={1} justifyContent="flex-end">
+                          <Box width={9} flexShrink={0} marginLeft={1} justifyContent="flex-end">
                             <Text
-                              color={r.seeders > 0 ? theme.colors.good : undefined}
-                              dimColor={!here}
-                              bold={here}
+                              color={here ? (r.seeders > 0 ? theme.colors.good : theme.colors.alt) : (r.seeders > 0 ? theme.colors.good : undefined)}
+                              dimColor={!here && r.seeders === 0}
+                              bold={here && r.seeders > 0}
                             >
-                              <Text color={r.seeders >= 10 ? theme.colors.good : r.seeders > 0 ? theme.colors.warn : theme.colors.bad}>
-                                {r.seeders > 0 ? "● " : "○ "}
-                              </Text>
                               {r.seeders || r.leechers
                                 ? `${formatCount(r.seeders)}:${formatCount(r.leechers)}`
-                                : "-"}
+                                : "─"}
                             </Text>
                           </Box>
                         </>
                       ) : (
                         <Box width={12} flexShrink={0} marginLeft={1} justifyContent="flex-end">
                           <Text
+                            color={here ? theme.colors.alt : undefined}
                             dimColor={!here}
-                            bold={here}
-                          >{formatRelative(r.added) || "-"}
+                          >{formatRelative(r.added) || "─"}
                           </Text>
                         </Box>
                       )}
@@ -565,16 +501,17 @@ export function Results() {
             </>
           )}
         </Panel>
-        {(mode === "filter" || textFilter.trim()) && (
-        <Box width={contentWidth} paddingLeft={1}>
+      </Box>
+      {(mode === "filter" || textFilter.trim()) && (
+        <Box width={contentWidth} paddingLeft={1} marginTop={0}>
           <Box flexShrink={0}>
-            <Text color={theme.colors.accent}>{`Filter ${ICON.pointer} `}</Text>
+            <Text color={theme.colors.accent} bold>{`FILTER ${ICON.pointer} `}</Text>
           </Box>
           <Box flexGrow={1} minWidth={0}>
             {mode === "filter" ? (
               <TextField
                 defaultValue={textFilter}
-                width={Math.max(1, contentWidth - 10)}
+                width={Math.max(1, contentWidth - 12)}
                 onChange={setTextFilter}
                 // Commit from the submit value / functional form, not the
                 // render closure: a same-tick burst (ctrl+u then enter) would
@@ -584,7 +521,7 @@ export function Results() {
                 onExitLeft={() => { setTextFilter((cur) => cur.trim()); setMode("list"); }}
               />
             ) : (
-              <Text wrap="truncate-end">{textFilter}</Text>
+              <Text wrap="truncate-end" color={theme.colors.alt}>{textFilter}</Text>
             )}
           </Box>
         </Box>

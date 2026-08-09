@@ -1,7 +1,6 @@
 import { useContext } from "react";
 import { Box, Text } from "ink";
 import { TextField } from "./TextField";
-import { Panel } from "./Panel";
 import { DEFAULT_THEME, ICON } from "../theme";
 import { StoreContext } from "../store";
 
@@ -28,16 +27,32 @@ export function SearchBar({
 }: SearchBarProps) {
   const store = useContext(StoreContext);
   const theme = store?.theme ?? DEFAULT_THEME;
+  const borderColor = editing ? theme.colors.accent : theme.colors.rule;
+  const promptColor = editing ? theme.colors.bright : theme.colors.alt;
+  const w = Math.max(10, width);
+  const innerW = Math.max(1, w - 4); // account for borders + padding
+
+  // ┌─[ 🔍 SEARCH ]────────────────────┐
+  const label = "SEARCH";
+  // Fixed chars: ┌─ (2) + [ (2) + ] (2) + ┐ (1) = 7
+  const fillLen = Math.max(0, w - 7 - label.length);
+
   return (
-    <Panel title="search" width={width} focused={editing} height={2}>
+    <Box flexDirection="column" width={w}>
       <Box>
-        <Text color={theme.colors.accent}>{`${ICON.pointer} `}</Text>
+        <Text color={borderColor}>{"┌─[ "}</Text>
+        <Text bold color={promptColor}>{label}</Text>
+        <Text color={borderColor}>{` ]${"─".repeat(fillLen)}┐`}</Text>
+      </Box>
+      <Box>
+        <Text color={borderColor}>{"│ "}</Text>
         <Box flexGrow={1} minWidth={0}>
+          <Text color={promptColor}>{`${ICON.pointer} `}</Text>
           {editing ? (
             <TextField
               defaultValue={value}
               placeholder={placeholder}
-              width={Math.max(1, width - 6)}
+              width={Math.max(1, innerW - 3)}
               onSubmit={onSubmit}
               onChange={onChange}
               onExitDown={onExitDown}
@@ -49,7 +64,11 @@ export function SearchBar({
             <Text dimColor>{placeholder}</Text>
           )}
         </Box>
+        <Text color={borderColor}>{" │"}</Text>
       </Box>
-    </Panel>
+      <Box>
+        <Text color={borderColor}>{`└${"─".repeat(Math.max(0, w - 2))}┘`}</Text>
+      </Box>
+    </Box>
   );
 }
