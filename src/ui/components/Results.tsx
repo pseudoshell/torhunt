@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Box, Text, useInput } from "ink";
 import { useStore, CATEGORIES } from "../store";
 import { Spinner } from "./Spinner";
-import { SearchBar } from "./SearchBar";
 import { TextField } from "./TextField";
 import { Panel } from "./Panel";
 import { Rule } from "./Rule";
@@ -175,17 +174,17 @@ export function Results() {
   }, [focused]);
 
   useEffect(() => {
-    if (!focused) return;
+  }, [mode, setCaptureMode]);
+
+  useEffect(() => {
     setResultFocus(mode === "detail" ? "detail" : "list");
     return () => setResultFocus(null);
-  }, [mode, focused, setResultFocus]);
+  }, [mode, setResultFocus]);
 
   const clamped = Math.min(cursor, Math.max(0, results.length - 1));
-
-  const searchH = 3;
   const filterH = mode === "filter" || textFilter.trim() ? 1 : 0;
-  const panelOuter = resultsPanelOuter(listRows, searchH + filterH);
-  const listHeight = Math.max(3, panelOuter - 4);
+  const panelOuter = Math.max(5, listRows - 1 - filterH);
+  const listHeight = Math.max(3, panelOuter - (results.length > 0 ? 6 : 4));
   const pageJump = Math.max(1, listHeight - 1);
 
   const openDownload = (r: TorrentResult): void =>
@@ -214,46 +213,79 @@ export function Results() {
     selRef.current = results[n]?.infoHash ?? null;
   };
 
+  const onSubmit = (value: string): void => {
+    setMode("list");
+    submitQuery(value);
+  };
+
   useInput(
     (input, key) => {
-      if (input === "/") {
-        setMode("search");
-        return;
-      }
       if (key.upArrow || input === "k") {
         if (results.length > 0 && clamped > 0) moveTo(clamped - 1);
         else setMode("search");
         return;
       }
-      if (input === "s") {
-        setSort((cur) => nextSort(cur));
-      } else if (input === "z") {
-        setHideDead((on) => !on);
-      } else if (input === "f") {
-        setMode("filter");
-      } else if (results.length === 0) {
+      if (key.downArrow || input === "j") {
+        if (results.length > 0 && clamped < results.length - 1) moveTo(clamped + 1);
         return;
-      } else if (key.downArrow || input === "j") {
-        moveTo(wrapStep(clamped, 1, results.length));
-      } else if (key.pageUp) {
+      }
+      if (key.pageUp) {
         moveTo(Math.max(0, clamped - pageJump));
-      } else if (key.pageDown) {
+        return;
+      }
+      if (key.pageDown) {
         moveTo(Math.min(results.length - 1, clamped + pageJump));
-      } else if (key.return) {
-        const r = results[clamped];
-        if (r) {
-          setDetail(r);
+        return;
+      }
+      if (input === "g") {
+        moveTo(0);
+        return;
+      }
+      if (input === "G") {
+        moveTo(results.length - 1);
+        return;
+      }
+      if (input === "s") {
+        setSort((s) => nextSort(s));
+        return;
+      }
+      if (input === "z") {
+        setHideDead((h) => !h);
+        return;
+      }
+      if (input === "f") {
+        setMode("filter");
+        return;
+      }
+      if (input === "o") {
+        if (results[clamped]) {
+          setDetail(results[clamped]!);
           setMode("detail");
         }
-      } else if (input === "d") {
-        const r = results[clamped];
-        if (r) openDownload(r);
-      } else if (input === "D") {
-        const r = results[clamped];
-        if (r) openDownloadTo(r);
-      } else if (input === "y") {
-        const r = results[clamped];
-        if (r) copyResultMagnet(r);
+        return;
+      }
+      if (key.return || input === "d") {
+        if (results[clamped]) openDownload(results[clamped]!);
+        return;
+      }
+      if (input === "D") {
+        if (results[clamped]) openDownloadTo(results[clamped]!);
+        return;
+      }
+      if (input === "y") {
+        if (results[clamped]) copyResultMagnet(results[clamped]!);
+        return;
+      }
+      if (input === "S") {
+        if (results[clamped]) {
+          const r = results[clamped]!;
+          fetchAndExportTorrent({ id: r.infoHash, name: r.name, magnet: r.magnet });
+        }
+        return;
+      }
+      if (key.escape) {
+        if (textFilter.trim()) setTextFilter("");
+        return;
       }
     },
     { isActive: focused && mode === "list" },
@@ -279,11 +311,6 @@ export function Results() {
     },
     { isActive: focused && (mode === "search" || mode === "filter") },
   );
-
-  const onSubmit = (value: string): void => {
-    setMode("list");
-    submitQuery(value);
-  };
 
   const browsing = query.trim() === "";
   const erroredCount = useMemo(
@@ -390,29 +417,56 @@ export function Results() {
 
   return (
     <Box flexDirection="column">
-      <SearchBar
+      <Panel
+        title={mode === "detail" ? "details" : browsing ? "latest" : "results"}
         width={contentWidth}
-        value={query}
-        editing={mode === "search"}
-        placeholder={PLACEHOLDER}
-        onSubmit={onSubmit}
-        onExitDown={() => setMode("list")}
-        onExitLeft={() => setRegion("sidebar")}
-      />
-      <Box marginTop={1}>
-        <Panel
-          title={mode === "detail" ? "details" : browsing ? "latest" : "results"}
-          width={contentWidth}
-          focused={focused && mode !== "search"}
-          count={mode === "detail" ? undefined : count}
-          height={panelOuter}
-        >
-          {mode === "detail" && detail ? (
-            <Detail r={detail} width={Math.max(10, contentWidth - 4)} theme={theme} />
-          ) : (
-            <>
-              <Box>{status()}</Box>
-              <Box flexDirection="column" marginTop={results.length > 0 ? 1 : 0}>
+        focused={focused}
+        count={mode === "detail" ? undefined : count}
+        height={panelOuter}
+      >
+        {mode === "detail" && detail ? (
+          <Detail r={detail} width={Math.max(10, contentWidth - 4)} theme={theme} />
+        ) : (
+          <>
+            {/* Unified Command Center Search Row */}
+            <Box width={Math.max(10, contentWidth - 4)} justifyContent="space-between" alignItems="center">
+              <Box flexGrow={1} minWidth={0}>
+                <Text color={mode === "search" ? theme.colors.accent : theme.colors.alt} bold>
+                  {`${ICON.pointer} `}
+                </Text>
+                {mode === "search" ? (
+                  <TextField
+                    defaultValue={query}
+                    placeholder={PLACEHOLDER}
+                    width={Math.max(1, contentWidth - 25)}
+                    onSubmit={onSubmit}
+                    onExitDown={() => setMode("list")}
+                    onExitLeft={() => setRegion("sidebar")}
+                  />
+                ) : (
+                  <Text
+                    color={query ? theme.colors.text : undefined}
+                    dimColor={!query}
+                    wrap="truncate-end"
+                  >
+                    {query || PLACEHOLDER}
+                  </Text>
+                )}
+              </Box>
+              {sort !== "none" ? (
+                <Box flexShrink={0} marginLeft={1}>
+                  <Text dimColor>[sort: </Text>
+                  <Text color={theme.colors.accent}>{sortLabel(sort)}</Text>
+                  <Text dimColor>]</Text>
+                </Box>
+              ) : null}
+            </Box>
+
+            {/* Divider between search and results table */}
+            <Rule width={Math.max(10, contentWidth - 4)} color={theme.colors.rule} />
+
+            <Box>{status()}</Box>
+            <Box flexDirection="column" marginTop={results.length > 0 ? 1 : 0}>
                 {results.length > 0 ? (
                   <Box>
                     <Box width={GUTTER} flexShrink={0} />
@@ -511,8 +565,7 @@ export function Results() {
             </>
           )}
         </Panel>
-      </Box>
-      {(mode === "filter" || textFilter.trim()) && (
+        {(mode === "filter" || textFilter.trim()) && (
         <Box width={contentWidth} paddingLeft={1}>
           <Box flexShrink={0}>
             <Text color={theme.colors.accent}>{`Filter ${ICON.pointer} `}</Text>
