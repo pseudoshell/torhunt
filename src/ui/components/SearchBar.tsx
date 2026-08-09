@@ -1,7 +1,9 @@
+import { useContext } from "react";
 import { Box, Text } from "ink";
 import { TextField } from "./TextField";
 import { Panel } from "./Panel";
-import { COLOR, ICON } from "../theme";
+import { DEFAULT_THEME, ICON } from "../theme";
+import { StoreContext } from "../store";
 
 interface SearchBarProps {
   width: number;
@@ -24,10 +26,12 @@ export function SearchBar({
   onExitDown,
   onExitLeft,
 }: SearchBarProps) {
+  const store = useContext(StoreContext);
+  const theme = store?.theme ?? DEFAULT_THEME;
   return (
     <Panel title="search" width={width} focused={editing} height={2}>
       <Box>
-        <Text color={COLOR.accent}>{`${ICON.pointer} `}</Text>
+        <Text color={theme.colors.accent}>{`${ICON.pointer} `}</Text>
         <Box flexGrow={1} minWidth={0}>
           {editing ? (
             <TextField

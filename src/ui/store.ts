@@ -27,11 +27,16 @@ export type DownloadFocus = "downloading" | "paused" | "failed" | "recent";
 
 export type SeedFocus = "seeding" | "paused" | "missing" | "idle";
 
+import type { Theme } from "./theme";
+
 export type ResultFocus = "list" | "detail";
 
 export interface Store {
   config: Config;
   setConfig: (c: Config) => void;
+  theme: Theme;
+  setThemeId: (themeId: string) => void;
+  cycleTheme: () => void;
   queue: DownloadQueue;
 
   view: View;

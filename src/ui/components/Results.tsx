@@ -11,7 +11,7 @@ import { getSource, SOURCES } from "../../sources/registry";
 import { stickCursor, wrapStep, windowStart, resultsPanelOuter } from "../move";
 import { sortResults, nextSort, sortLabel, sortArrow, type Sort, type SortField } from "../sort";
 import { filterResults } from "../filter";
-import { COLOR, GUTTER, ICON, sourceStyle } from "../theme";
+import { COLOR, GUTTER, ICON, sourceStyle, type Theme } from "../theme";
 import { cleanText, formatBytes, formatCount, formatRelative, stripControl, truncate } from "../../util/format";
 import type { Source, TorrentResult } from "../../sources/types";
 
@@ -30,13 +30,13 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-function Detail({ r, width }: { r: TorrentResult; width: number }) {
-  const ss = sourceStyle(r.source);
+function Detail({ r, width, theme }: { r: TorrentResult; width: number; theme: Theme }) {
+  const ss = sourceStyle(r.source, theme);
   const date = formatRelative(r.added);
   const health =
     r.seeders || r.leechers ? (
       <Text>
-        <Text color={r.seeders > 0 ? COLOR.good : undefined} bold={r.seeders > 0}>
+        <Text color={r.seeders > 0 ? theme.colors.good : undefined} bold={r.seeders > 0}>
           {r.seeders}
         </Text>
         <Text dimColor>{` seeders ${ICON.dot} ${r.leechers} leechers`}</Text>
@@ -48,7 +48,7 @@ function Detail({ r, width }: { r: TorrentResult; width: number }) {
     <Box flexDirection="column">
       <Box>
         <Box flexGrow={1} minWidth={0}>
-          <Text bold color={COLOR.text} wrap="truncate-end">
+          <Text bold color={theme.colors.text} wrap="truncate-end">
             {cleanText(r.name)}
           </Text>
         </Box>
@@ -58,13 +58,13 @@ function Detail({ r, width }: { r: TorrentResult; width: number }) {
           </Text>
         </Box>
       </Box>
-      <Rule width={width} />
+      <Rule width={width} color={theme.colors.rule} />
       <Box marginTop={1} flexDirection="column">
         <DetailRow
           label="Size"
           value={
             r.sizeBytes > 0 ? (
-              <Text color={COLOR.text}>{formatBytes(r.sizeBytes)}</Text>
+              <Text color={theme.colors.text}>{formatBytes(r.sizeBytes)}</Text>
             ) : (
               <Text dimColor>unknown</Text>
             )
@@ -78,7 +78,7 @@ function Detail({ r, width }: { r: TorrentResult; width: number }) {
         <DetailRow
           label="Hash"
           value={
-            <Text color={COLOR.alt} dimColor wrap="truncate-end">
+            <Text color={theme.colors.alt} dimColor wrap="truncate-end">
               {stripControl(r.infoHash)}
             </Text>
           }
@@ -86,29 +86,29 @@ function Detail({ r, width }: { r: TorrentResult; width: number }) {
         <DetailRow
           label="Magnet"
           value={
-            <Text color={COLOR.alt} dimColor wrap="truncate-end">
+            <Text color={theme.colors.alt} dimColor wrap="truncate-end">
               {stripControl(r.magnet)}
             </Text>
           }
         />
       </Box>
       <Box marginTop={1}>
-        <Text color={COLOR.accent} bold>
+        <Text color={theme.colors.accent} bold>
           d
         </Text>
-        <Text color={COLOR.text}> Download</Text>
+        <Text color={theme.colors.text}> Download</Text>
         <Text dimColor>{`  ${ICON.dot}  `}</Text>
-        <Text color={COLOR.accent} bold>
+        <Text color={theme.colors.accent} bold>
           y
         </Text>
-        <Text color={COLOR.text}> Copy</Text>
+        <Text color={theme.colors.text}> Copy</Text>
         <Text dimColor>{`  ${ICON.dot}  `}</Text>
-        <Text color={COLOR.accent} bold>
+        <Text color={theme.colors.accent} bold>
           e
         </Text>
-        <Text color={COLOR.text}> Export</Text>
+        <Text color={theme.colors.text}> Export</Text>
         <Text dimColor>{`  ${ICON.dot}  `}</Text>
-        <Text color={COLOR.alt}>esc</Text>
+        <Text color={theme.colors.alt}>esc</Text>
         <Text dimColor> back</Text>
       </Box>
     </Box>
@@ -130,6 +130,7 @@ export function Results() {
     setResultFocus,
     contentWidth,
     listRows,
+    theme,
   } = useStore();
 
   const search = useConcurrentSearch(query);
@@ -377,7 +378,7 @@ export function Results() {
     if (sort === "none" || sort.field !== field) return label;
     return (
       <>
-        <Text color={COLOR.accent} bold>{sortArrow(sort.dir)}</Text>
+        <Text color={theme.colors.accent} bold>{sortArrow(sort.dir)}</Text>
         {label}
       </>
     );
@@ -407,7 +408,7 @@ export function Results() {
           height={panelOuter}
         >
           {mode === "detail" && detail ? (
-            <Detail r={detail} width={Math.max(10, contentWidth - 4)} />
+            <Detail r={detail} width={Math.max(10, contentWidth - 4)} theme={theme} />
           ) : (
             <>
               <Box>{status()}</Box>
@@ -443,11 +444,11 @@ export function Results() {
                 {visible.map((r, i) => {
                   const index = start + i;
                   const here = index === clamped && focused && mode === "list";
-                  const ss = sourceStyle(r.source);
+                  const ss = sourceStyle(r.source, theme);
                   return (
                     <Box key={r.infoHash}>
                       <Box width={GUTTER} flexShrink={0}>
-                        <Text color={COLOR.accent}>{here ? ICON.pointer : ""}</Text>
+                        <Text color={theme.colors.accent}>{here ? ICON.pointer : ""}</Text>
                       </Box>
                       <Box width={numW} flexShrink={0} justifyContent="flex-end">
                         <Text dimColor>{index + 1}</Text>
@@ -455,7 +456,7 @@ export function Results() {
                       <Box flexGrow={1} minWidth={0} marginLeft={1}>
                         <Text
                           wrap="truncate-end"
-                          color={here ? COLOR.accent : undefined}
+                          color={here ? theme.colors.accent : undefined}
                           dimColor={!here}
                           bold={here}
                         >
@@ -471,12 +472,16 @@ export function Results() {
                             >{r.sizeBytes > 0 ? formatBytes(r.sizeBytes) : "-"}
                             </Text>
                           </Box>
-                          <Box width={9} flexShrink={0} marginLeft={1} justifyContent="flex-end">
+                          <Box width={10} flexShrink={0} marginLeft={1} justifyContent="flex-end">
                             <Text
-                              color={r.seeders > 0 ? COLOR.good : undefined}
+                              color={r.seeders > 0 ? theme.colors.good : undefined}
                               dimColor={!here}
                               bold={here}
-                            >{r.seeders || r.leechers
+                            >
+                              <Text color={r.seeders >= 10 ? theme.colors.good : r.seeders > 0 ? theme.colors.warn : theme.colors.bad}>
+                                {r.seeders > 0 ? "● " : "○ "}
+                              </Text>
+                              {r.seeders || r.leechers
                                 ? `${formatCount(r.seeders)}:${formatCount(r.leechers)}`
                                 : "-"}
                             </Text>
@@ -510,7 +515,7 @@ export function Results() {
       {(mode === "filter" || textFilter.trim()) && (
         <Box width={contentWidth} paddingLeft={1}>
           <Box flexShrink={0}>
-            <Text color={COLOR.accent}>{`Filter ${ICON.pointer} `}</Text>
+            <Text color={theme.colors.accent}>{`Filter ${ICON.pointer} `}</Text>
           </Box>
           <Box flexGrow={1} minWidth={0}>
             {mode === "filter" ? (

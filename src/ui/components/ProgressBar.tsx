@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Text } from "ink";
-import { COLOR, RULE, lerpHex } from "../theme";
-import { SHEEN_PEAK, SHEEN_TICK_MS, sheenCenter, sheenIntensity, sheenPeriod } from "../sheen";
-
-const DEEP = "#7c5cd6";
+import { DEFAULT_THEME, lerpHex } from "../theme";
+import { SHEEN_TICK_MS, sheenCenter, sheenIntensity, sheenPeriod } from "../sheen";
+import { StoreContext } from "../store";
 
 interface Run {
   color: string;
@@ -35,7 +34,7 @@ function paint(rs: Run[]) {
 export function ProgressBar({
   pct,
   width,
-  color = COLOR.accent,
+  color,
   animate = false,
 }: {
   pct: number;
@@ -43,6 +42,9 @@ export function ProgressBar({
   color?: string;
   animate?: boolean;
 }) {
+  const store = useContext(StoreContext);
+  const theme = store?.theme ?? DEFAULT_THEME;
+  const barColor = color ?? theme.colors.accent;
   const clamped = Math.max(0, Math.min(100, pct));
   const filled = Math.round((clamped / 100) * width);
   const empty = Math.max(0, width - filled);
@@ -56,14 +58,14 @@ export function ProgressBar({
     return () => clearInterval(timer);
   }, [animate]);
 
-  const track = empty > 0 ? <Text color={RULE}>{"░".repeat(empty)}</Text> : null;
+  const track = empty > 0 ? <Text color={theme.colors.rule}>{"░".repeat(empty)}</Text> : null;
 
   if (filled === 0) return <Text>{track}</Text>;
 
   if (!animate) {
-    const deep = lerpHex(color, "#000000", 0.3);
-    const bright = lerpHex(color, COLOR.text, 0.35);
-    const cells = Array.from({ length: filled }, (_, i) => ramp(i / denom, deep, color, bright));
+    const deep = lerpHex(barColor, "#000000", 0.3);
+    const bright = lerpHex(barColor, theme.colors.text, 0.35);
+    const cells = Array.from({ length: filled }, (_, i) => ramp(i / denom, deep, barColor, bright));
     return (
       <Text>
         {paint(runs(cells))}
@@ -75,9 +77,9 @@ export function ProgressBar({
   const period = sheenPeriod(width);
   const center = sheenCenter(tick, period);
   const cells = Array.from({ length: filled }, (_, i) => {
-    let c = ramp(i / denom, DEEP, COLOR.accent, COLOR.bright);
+    let c = ramp(i / denom, theme.colors.base, theme.colors.accent, theme.colors.bright);
     const intensity = sheenIntensity(i, center);
-    if (intensity > 0) c = lerpHex(c, SHEEN_PEAK, intensity);
+    if (intensity > 0) c = lerpHex(c, theme.colors.sheenPeak, intensity);
     return c;
   });
 

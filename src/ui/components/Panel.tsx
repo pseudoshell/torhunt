@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import { useContext, type ReactNode } from "react";
 import { Box, Text } from "ink";
-import { COLOR, RULE } from "../theme";
+import { DEFAULT_THEME } from "../theme";
+import { StoreContext } from "../store";
 
 interface PanelProps {
   title: string;
@@ -12,7 +13,9 @@ interface PanelProps {
 }
 
 export function Panel({ title, width, focused, count, height, children }: PanelProps) {
-  const color = focused ? COLOR.accent : RULE;
+  const store = useContext(StoreContext);
+  const theme = store?.theme ?? DEFAULT_THEME;
+  const color = focused ? theme.colors.accent : theme.colors.rule;
   const w = Math.max(10, width);
   const cap = title.charAt(0).toUpperCase() + title.slice(1);
   const label = count ? `${cap} ${count}` : cap;

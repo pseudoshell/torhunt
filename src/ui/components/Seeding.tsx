@@ -7,30 +7,31 @@ import { COLOR, GUTTER, ICON, sourceStyle } from "../theme";
 import { cleanText, formatBytes, formatBytesPerSec, truncate } from "../../util/format";
 import type { SeedItem } from "../../download/types";
 
+import type { Theme } from "../theme";
+
 const MARK = 2;
 const SIZE_W = 10;
 const STATUS_W = 14;
 const SRC_W = 4;
-const PAUSED = "#7c7785";
 
-function glyph(seed: SeedItem | undefined): { icon: string; color: string } {
-  if (!seed) return { icon: ICON.done, color: COLOR.good };
-  if (seed.status === "seeding") return { icon: ICON.up, color: COLOR.good };
-  if (seed.status === "paused") return { icon: ICON.pause, color: PAUSED };
-  return { icon: ICON.warn, color: COLOR.warn };
+function glyph(seed: SeedItem | undefined, theme: Theme): { icon: string; color: string } {
+  if (!seed) return { icon: ICON.done, color: theme.colors.good };
+  if (seed.status === "seeding") return { icon: ICON.up, color: theme.colors.good };
+  if (seed.status === "paused") return { icon: ICON.pause, color: theme.colors.paused };
+  return { icon: ICON.warn, color: theme.colors.warn };
 }
 
-function statusCell(seed: SeedItem | undefined): { text: string; color?: string; dim: boolean } {
+function statusCell(seed: SeedItem | undefined, theme: Theme): { text: string; color?: string; dim: boolean } {
   if (!seed) return { text: "ready", dim: true };
   if (seed.status === "seeding") {
-    return { text: `${ICON.up}${formatBytesPerSec(seed.uploadSpeed) || "0 B/s"} ${ICON.peer}${seed.peers}`, color: COLOR.good, dim: false };
+    return { text: `${ICON.up}${formatBytesPerSec(seed.uploadSpeed) || "0 B/s"} ${ICON.peer}${seed.peers}`, color: theme.colors.good, dim: false };
   }
   if (seed.status === "paused") return { text: "paused", dim: true };
-  return { text: "file gone", color: COLOR.warn, dim: false };
+  return { text: "file gone", color: theme.colors.warn, dim: false };
 }
 
 export function Seeding() {
-  const { queue, region, contentWidth, listRows, setNotice, openDownloadFolder, setSeedFocus } =
+  const { queue, region, contentWidth, listRows, setNotice, openDownloadFolder, setSeedFocus, theme } =
     useStore();
   const history = useQueueHistory(queue);
   const seeds = useSeeds(queue);
@@ -138,19 +139,19 @@ export function Seeding() {
         {visible.map((h, i) => {
           const here = start + i === clamped && focused;
           const seed = seeds.get(h.id);
-          const g = glyph(seed);
-          const st = statusCell(seed);
-          const ss = sourceStyle(h.source);
+          const g = glyph(seed, theme);
+          const st = statusCell(seed, theme);
+          const ss = sourceStyle(h.source, theme);
           return (
             <Box key={h.id}>
               <Box width={MARK} flexShrink={0}>
-                <Text color={COLOR.accent} bold>{here ? ICON.pointer : ""}</Text>
+                <Text color={theme.colors.accent} bold>{here ? ICON.pointer : ""}</Text>
               </Box>
               <Box width={GUTTER} flexShrink={0}>
                 <Text color={g.color} dimColor={!seed && !here}>{g.icon}</Text>
               </Box>
               <Box flexGrow={1} minWidth={0} marginLeft={1}>
-                <Text wrap="truncate-end" bold={here} color={here ? COLOR.accent : undefined} dimColor={!here}>
+                <Text wrap="truncate-end" bold={here} color={here ? theme.colors.accent : undefined} dimColor={!here}>
                   {cleanText(h.name)}
                 </Text>
               </Box>

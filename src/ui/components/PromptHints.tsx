@@ -1,17 +1,21 @@
+import { useContext } from "react";
 import { Box, Text } from "ink";
-import { COLOR, ICON } from "../theme";
+import { DEFAULT_THEME, ICON } from "../theme";
+import { StoreContext } from "../store";
 
 // The one-line action row under a modal prompt: the submit verb carries the
 // visual weight, esc stays quiet.
 export function PromptHints({ submitLabel }: { submitLabel: string }) {
+  const store = useContext(StoreContext);
+  const theme = store?.theme ?? DEFAULT_THEME;
   return (
     <Box>
-      <Text color={COLOR.accent} bold>
+      <Text color={theme.colors.accent} bold>
         ↵
       </Text>
-      <Text color={COLOR.text}>{` ${submitLabel}`}</Text>
+      <Text color={theme.colors.text}>{` ${submitLabel}`}</Text>
       <Text dimColor>{`  ${ICON.dot}  `}</Text>
-      <Text color={COLOR.alt}>esc</Text>
+      <Text color={theme.colors.alt}>esc</Text>
       <Text dimColor> cancel</Text>
     </Box>
   );

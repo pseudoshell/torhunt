@@ -1,8 +1,10 @@
+import { useContext } from "react";
 import { Box, Text, useInput } from "ink";
 import { TextField } from "./TextField";
 import { Panel } from "./Panel";
 import { PromptHints } from "./PromptHints";
-import { COLOR, ICON } from "../theme";
+import { DEFAULT_THEME, ICON } from "../theme";
+import { StoreContext } from "../store";
 
 interface FolderPromptProps {
   width: number;
@@ -28,6 +30,8 @@ export function FolderPrompt({
   onSubmit,
   onCancel,
 }: FolderPromptProps) {
+  const store = useContext(StoreContext);
+  const theme = store?.theme ?? DEFAULT_THEME;
   useInput((_input, key) => {
     if (key.escape) onCancel();
   });
@@ -43,7 +47,7 @@ export function FolderPrompt({
           </Box>
         ) : null}
         <Box>
-          <Text color={COLOR.accent}>{`${ICON.pointer} `}</Text>
+          <Text color={theme.colors.accent}>{`${ICON.pointer} `}</Text>
           <Box flexGrow={1} minWidth={0}>
             <TextField
               defaultValue={value}

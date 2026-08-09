@@ -31,6 +31,7 @@ import {
   type View,
 } from "./store";
 import { Logo } from "./components/Logo";
+import { HeaderBar } from "./components/HeaderBar";
 import { Sidebar, RAIL_WIDTH } from "./components/Sidebar";
 import { Rule } from "./components/Rule";
 import { Footer } from "./components/Footer";
@@ -43,8 +44,9 @@ import { TabTitle } from "./components/TabTitle";
 import { Splash } from "./views/Splash";
 import { FolderPrompt } from "./components/FolderPrompt";
 import { TrackersPrompt } from "./components/TrackersPrompt";
+import { ThemePrompt } from "./components/ThemePrompt";
 import { footerHints } from "./keymap";
-import { COLOR, ICON } from "./theme";
+import { COLOR, ICON, DEFAULT_THEME, getTheme, nextTheme, type Theme } from "./theme";
 import { useMouseWheel } from "./hooks/useMouseWheel";
 import { VERSION } from "../version";
 import { fetchLatestVersion, isNewer } from "../update/version";
@@ -97,6 +99,8 @@ export function App({
   const [showHelp, setShowHelp] = useState(false);
   const [editingFolder, setEditingFolder] = useState(false);
   const [editingTrackers, setEditingTrackers] = useState(false);
+  const [editingTheme, setEditingTheme] = useState(false);
+  const [previewThemeId, setPreviewThemeId] = useState<string | null>(null);
   // A result waiting on the "download to" prompt (D); null when the prompt is
   // closed. lastDownloadToDir pre-fills the next prompt so queueing a batch
   // into the same alternate folder only costs one typed path per session.
@@ -242,6 +246,28 @@ export function App({
     },
     [config, setConfig, closeTrackersPrompt],
   );
+
+  const theme: Theme = useMemo(
+    () => getTheme(previewThemeId ?? config?.theme),
+    [previewThemeId, config?.theme],
+  );
+
+  const setThemeId = useCallback(
+    (themeId: string) => {
+      if (!config) return;
+      const next = getTheme(themeId);
+      if (config.theme === next.id) return;
+      setConfig({ ...config, theme: next.id });
+      setNotice(`Theme: ${next.name}`);
+    },
+    [config, setConfig],
+  );
+
+  const cycleTheme = useCallback(() => {
+    if (!config) return;
+    const next = nextTheme(config.theme);
+    setThemeId(next.id);
+  }, [config, setThemeId]);
 
   const setDownloadDir = useCallback(
     (raw: string) => {
@@ -447,6 +473,9 @@ export function App({
     return {
       config,
       setConfig,
+      theme,
+      setThemeId,
+      cycleTheme,
       queue,
       view,
       setView,
@@ -454,7 +483,7 @@ export function App({
       submitQuery,
       section,
       setSection,
-      region: showHelp || editingFolder || editingTrackers || pendingDownload ? "help" : region,
+      region: showHelp || editingFolder || editingTrackers || editingTheme || pendingDownload ? "help" : region,
       setRegion,
       captureMode,
       setCaptureMode,
@@ -482,6 +511,9 @@ export function App({
   }, [
     queue,
     config,
+    theme,
+    setThemeId,
+    cycleTheme,
     view,
     query,
     submitQuery,
@@ -490,6 +522,7 @@ export function App({
     showHelp,
     editingFolder,
     editingTrackers,
+    editingTheme,
     pendingDownload,
     captureMode,
     downloadFocus,
@@ -517,7 +550,7 @@ export function App({
         quitAll();
         return;
       }
-      if (editingFolder || editingTrackers || pendingDownload) return; // the prompt owns input (its own esc + enter)
+      if (editingFolder || editingTrackers || editingTheme || pendingDownload) return; // the prompt owns input (its own esc + enter)
       if (captureMode === "text") return;
       if (showHelp) {
         setShowHelp(false);
@@ -535,6 +568,11 @@ export function App({
       if (input === "t") {
         setShowHelp(false);
         setEditingTrackers(true);
+        return;
+      }
+      if (input === "T") {
+        setShowHelp(false);
+        setEditingTheme(true);
         return;
       }
       if (input === "m") {
@@ -591,21 +629,8 @@ export function App({
     <StoreContext.Provider value={store}>
       <TabTitle />
       <Box flexDirection="column" paddingX={1}>
-        <Box justifyContent="space-between">
-          {/* The wordmark never shrinks: without these constraints a long notice
-              squeezes the logo box and wraps its own text through the art. */}
-          <Box flexShrink={0}>
-            <Logo />
-          </Box>
-          {notice ? (
-            <Box flexShrink={1} minWidth={0} marginLeft={2}>
-              <Text color={COLOR.good} wrap="truncate-end">
-                {notice}
-              </Text>
-            </Box>
-          ) : null}
-        </Box>
-        {showTopRule ? <Rule width={ruleWidth} /> : null}
+        <HeaderBar width={ruleWidth} />
+        {showTopRule ? <Rule width={ruleWidth} color={theme.colors.rule} /> : null}
 
         {showHelp ? (
           <Box marginTop={1}>
@@ -635,6 +660,27 @@ export function App({
           </Box>
         ) : null}
 
+        {editingTheme ? (
+          <Box marginTop={1}>
+            <ThemePrompt
+              width={Math.max(24, Math.min(cols - 4, 78))}
+              currentThemeId={config?.theme ?? DEFAULT_THEME.id}
+              onPreview={(id) => {
+                setPreviewThemeId(id);
+              }}
+              onSelect={(id) => {
+                setEditingTheme(false);
+                setPreviewThemeId(null);
+                setThemeId(id);
+              }}
+              onCancel={() => {
+                setEditingTheme(false);
+                setPreviewThemeId(null);
+              }}
+            />
+          </Box>
+        ) : null}
+
         {pendingDownload ? (
           <Box marginTop={1}>
             <FolderPrompt
@@ -656,7 +702,7 @@ export function App({
         <Box
           height={bodyH}
           marginTop={compact ? 0 : 1}
-          display={showHelp || editingFolder || editingTrackers || pendingDownload ? "none" : "flex"}
+          display={showHelp || editingFolder || editingTrackers || editingTheme || pendingDownload ? "none" : "flex"}
           overflow="hidden"
         >
           <Sidebar />
@@ -672,7 +718,7 @@ export function App({
         </Box>
 
         {showFooter ? (
-          <Box display={showHelp || editingFolder || editingTrackers || pendingDownload ? "none" : "flex"}>
+          <Box display={showHelp || editingFolder || editingTrackers || editingTheme || pendingDownload ? "none" : "flex"}>
             <Footer hints={footerHints(region, section, downloadFocus, seedFocus, resultFocus)} />
           </Box>
         ) : null}

@@ -71,6 +71,8 @@ function fakeQueue(
   return stub as unknown as DownloadQueue;
 }
 
+import { DEFAULT_THEME } from "../src/ui/theme";
+
 function makeStore(
   overrides: Partial<Store> = {},
   items: QueueItem[] = [],
@@ -79,8 +81,11 @@ function makeStore(
 ): Store {
   const noop = (): void => {};
   return {
-    config: { downloadDir: "~/Downloads/torlink" } as Config,
+    config: { downloadDir: "~/Downloads/torlink", theme: "electric-cyan", trackers: [] } as Config,
     setConfig: noop,
+    theme: DEFAULT_THEME,
+    setThemeId: noop,
+    cycleTheme: noop,
     queue: fakeQueue(items, history, seeds),
     view: "browser",
     setView: noop,

@@ -9,7 +9,8 @@ const CARD_BORDER = lerpHex(COLOR.accent, RULE, 0.55);
 const FOOT_FULL = "Your downloaded files always stay on disk.";
 
 export function HelpOverlay() {
-  const { cols, rows } = useStore();
+  const { cols, rows, theme } = useStore();
+  const cardBorder = lerpHex(theme.colors.accent, theme.colors.rule, 0.55);
   const m = pickLayout(cols);
   const width = Math.min(m.width, cols - 2);
   // Condense when the full card (gridH + 9 rows, under 3 rows of app chrome)
@@ -22,11 +23,11 @@ export function HelpOverlay() {
       alignSelf="flex-start"
       width={width}
       borderStyle="round"
-      borderColor={CARD_BORDER}
+      borderColor={cardBorder}
       paddingX={1}
       paddingY={short ? 0 : 1}
     >
-      <Text bold color={COLOR.accent}>
+      <Text bold color={theme.colors.accent}>
         Keyboard
       </Text>
       <Box marginTop={1} flexDirection="row">
@@ -49,7 +50,7 @@ export function HelpOverlay() {
                   {group.hints.map((h) => (
                     <Box key={h.keys + h.label}>
                       <Box width={KEY_W[gi]} flexShrink={0}>
-                        <Text color={COLOR.alt}>{h.keys}</Text>
+                        <Text color={theme.colors.alt}>{h.keys}</Text>
                       </Box>
                       <Text dimColor wrap="truncate-end">
                         {h.label}

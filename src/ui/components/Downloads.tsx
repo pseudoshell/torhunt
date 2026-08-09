@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { useStore, useQueueItems, useQueueHistory, type DownloadFocus } from "../store";
 import { Panel } from "./Panel";
@@ -16,15 +16,15 @@ import {
 import type { QueueItem } from "../../download/types";
 import type { HistoryItem } from "../../download/history";
 
+import type { Theme } from "../theme";
+
 const ROWS_PER_ACTIVE = 2;
 const MARK = 2;
 
-const PAUSED = "#7c7785";
-
-function statusColor(status: QueueItem["status"]): string {
-  if (status === "failed") return COLOR.bad;
-  if (status === "paused" || status === "queued") return PAUSED;
-  return COLOR.accent;
+function statusColor(status: QueueItem["status"], theme: Theme): string {
+  if (status === "failed") return theme.colors.bad;
+  if (status === "paused" || status === "queued") return theme.colors.paused;
+  return theme.colors.accent;
 }
 
 function statusIcon(status: QueueItem["status"]): string {
@@ -34,11 +34,14 @@ function statusIcon(status: QueueItem["status"]): string {
   return ICON.down;
 }
 
-function rightStats(it: QueueItem): string {
+import { sparkline } from "../../util/sparkline";
+
+function rightStats(it: QueueItem, speedHistory?: number[]): string {
   if (it.status === "downloading") {
     const speed = formatBytesPerSec(it.speed) || "…";
+    const spark = speedHistory && speedHistory.length > 1 ? ` ${sparkline(speedHistory, 6)}` : "";
     const eta = it.eta ? `  ${formatEtaShort(it.eta)}` : "";
-    return `${it.progress}%  ${speed}  ${ICON.peer}${it.peers}${eta}`;
+    return `${it.progress}%  ${speed}${spark}  ${ICON.peer}${it.peers}${eta}`;
   }
   if (it.status === "paused") return `paused  ${it.progress}%`;
   if (it.status === "queued") return `queued  ${it.progress}%`;
@@ -55,10 +58,22 @@ export function Downloads() {
     openDownloadFolder,
     setDownloadFocus,
     exportTorrent,
+    theme,
   } = useStore();
   const active = useQueueItems(queue);
   const recent = useQueueHistory(queue);
   const focused = region === "content";
+
+  const speedMapRef = useRef<Map<string, number[]>>(new Map());
+  useEffect(() => {
+    for (const it of active) {
+      if (it.status === "downloading") {
+        const prev = speedMapRef.current.get(it.id) ?? [];
+        const updated = [...prev, it.speed].slice(-10);
+        speedMapRef.current.set(it.id, updated);
+      }
+    }
+  }, [active]);
 
   const total = active.length + recent.length;
   const [cursor, setCursor] = useState(0);
@@ -164,13 +179,13 @@ export function Downloads() {
     <Panel title="downloads" width={contentWidth} focused={focused} count={count} height={panelH}>
       {activeVisible.map((it, i) => {
         const here = activeStart + i === clamped && focused && inActive;
-        const sc = statusColor(it.status);
-        const ss = sourceStyle(it.source);
+        const sc = statusColor(it.status, theme);
+        const ss = sourceStyle(it.source, theme);
         return (
           <Box key={it.id} flexDirection="column">
             <Box>
               <Box width={MARK} flexShrink={0}>
-                <Text color={COLOR.accent} bold>
+                <Text color={theme.colors.accent} bold>
                   {here ? ICON.pointer : ""}
                 </Text>
               </Box>
@@ -181,7 +196,7 @@ export function Downloads() {
                 <Text
                   wrap="truncate-end"
                   bold={here}
-                  color={here ? COLOR.accent : undefined}
+                  color={here ? theme.colors.accent : undefined}
                   dimColor={!here}
                 >
                   {cleanText(it.name)}
@@ -212,7 +227,7 @@ export function Downloads() {
                 animate={it.status === "downloading"}
               />
               <Box marginLeft={gap} flexShrink={0}>
-                <Text dimColor>{truncate(rightStats(it), statsW)}</Text>
+                <Text dimColor>{truncate(rightStats(it, speedMapRef.current.get(it.id)), statsW)}</Text>
               </Box>
             </Box>
           </Box>
@@ -227,17 +242,17 @@ export function Downloads() {
 
       {recentVisible.map((h: HistoryItem, i) => {
         const here = recentStart + i === recentCursor && focused && !inActive;
-        const ss = sourceStyle(h.source);
+        const ss = sourceStyle(h.source, theme);
         const when = formatRelative(h.completedAt / 1000);
         return (
           <Box key={h.id}>
             <Box width={MARK} flexShrink={0}>
-              <Text color={COLOR.accent} bold>
+              <Text color={theme.colors.accent} bold>
                 {here ? ICON.pointer : ""}
               </Text>
             </Box>
             <Box width={GUTTER} flexShrink={0}>
-              <Text color={COLOR.good} dimColor={!here}>
+              <Text color={theme.colors.good} dimColor={!here}>
                 {ICON.done}
               </Text>
             </Box>
@@ -245,7 +260,7 @@ export function Downloads() {
               <Text
                 wrap="truncate-end"
                 bold={here}
-                color={here ? COLOR.accent : undefined}
+                color={here ? theme.colors.accent : undefined}
                 dimColor={!here}
               >
                 {cleanText(h.name)}

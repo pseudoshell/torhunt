@@ -1,21 +1,25 @@
+import { useContext } from "react";
 import { Box, Text } from "ink";
 import { LOGO_LINES, SPROUT_CELLS } from "../logo";
-import { COLOR, lerpHex } from "../theme";
+import { DEFAULT_THEME, lerpHex, type Theme } from "../theme";
+import { StoreContext } from "../store";
 
 const HIGHLIGHT = "#ffffff";
-const TOP = COLOR.bright;
-const BASE = "#7c5cd6";
-const SHADE = "#4c3a8a";
-const SPROUT_COLOR = "#5ae87a";
 
-function getSheen(t: number): string {
-  if (t < 0.15) return lerpHex(HIGHLIGHT, TOP, t / 0.15);
-  if (t < 0.4) return lerpHex(TOP, COLOR.accent, (t - 0.15) / 0.25);
-  if (t < 0.7) return lerpHex(COLOR.accent, BASE, (t - 0.4) / 0.3);
-  return lerpHex(BASE, SHADE, (t - 0.7) / 0.3);
+function getSheen(t: number, theme: Theme): string {
+  const top = theme.colors.bright;
+  const accent = theme.colors.accent;
+  const base = theme.colors.base;
+  const shade = theme.colors.shade;
+  if (t < 0.15) return lerpHex(HIGHLIGHT, top, t / 0.15);
+  if (t < 0.4) return lerpHex(top, accent, (t - 0.15) / 0.25);
+  if (t < 0.7) return lerpHex(accent, base, (t - 0.4) / 0.3);
+  return lerpHex(base, shade, (t - 0.7) / 0.3);
 }
 
 export function Logo() {
+  const store = useContext(StoreContext);
+  const theme = store?.theme ?? DEFAULT_THEME;
   const rows = LOGO_LINES.length;
 
   return (
@@ -34,7 +38,7 @@ export function Logo() {
 
               if (SPROUT_CELLS.has(`${row},${i}`)) {
                 return (
-                  <Text key={i} bold color={SPROUT_COLOR}>
+                  <Text key={i} bold color={theme.colors.sprout}>
                     {ch}
                   </Text>
                 );
@@ -44,7 +48,7 @@ export function Logo() {
               const factor = (tX + tY) / 2;
 
               return (
-                <Text key={i} bold color={getSheen(factor)}>
+                <Text key={i} bold color={getSheen(factor, theme)}>
                   {ch}
                 </Text>
               );

@@ -5,11 +5,13 @@ import { serializeWrites, writeJsonAtomic } from "../util/atomic";
 export interface Config {
   downloadDir: string;
   trackers: string[];
+  theme: string;
 }
 
 export const defaultConfig: Config = {
   downloadDir: defaultDownloadDir,
   trackers: [],
+  theme: "electric-cyan",
 };
 
 export async function loadConfig(): Promise<Config> {
@@ -29,6 +31,7 @@ export async function loadConfig(): Promise<Config> {
       trackers: Array.isArray(parsed.trackers)
         ? parsed.trackers.filter((t): t is string => typeof t === "string" && t.length > 0)
         : [],
+      theme: typeof parsed.theme === "string" && parsed.theme ? parsed.theme : defaultConfig.theme,
     };
     return cfg;
   } catch {

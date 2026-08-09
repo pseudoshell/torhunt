@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { TextField } from "./TextField";
 import { Panel } from "./Panel";
 import { PromptHints } from "./PromptHints";
 import { formatTrackers, parseTrackers, trackersStatus } from "../../config/trackers";
-import { COLOR, ICON } from "../theme";
+import { DEFAULT_THEME, ICON } from "../theme";
+import { StoreContext } from "../store";
 
 interface TrackersPromptProps {
   width: number;
@@ -14,6 +15,8 @@ interface TrackersPromptProps {
 }
 
 export function TrackersPrompt({ width, value, onSubmit, onCancel }: TrackersPromptProps) {
+  const store = useContext(StoreContext);
+  const theme = store?.theme ?? DEFAULT_THEME;
   const initial = formatTrackers(value);
   const [fieldText, setFieldText] = useState(initial);
 
@@ -30,7 +33,7 @@ export function TrackersPrompt({ width, value, onSubmit, onCancel }: TrackersPro
           </Text>
         </Box>
         <Box>
-          <Text color={COLOR.accent}>{`${ICON.pointer} `}</Text>
+          <Text color={theme.colors.accent}>{`${ICON.pointer} `}</Text>
           <Box flexGrow={1} minWidth={0}>
             <TextField
               defaultValue={initial}
