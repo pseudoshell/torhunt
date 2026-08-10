@@ -1,17 +1,21 @@
 import { getSource } from "../sources/registry";
 import type { TorrentResult } from "../sources/types";
+import { matchesQualityTag, type QualityTag } from "../util/tags";
 
 export function filterResults(
   list: TorrentResult[],
   hideDead: boolean,
   textFilter: string = "",
+  qualityFilter: QualityTag | "ALL" = "ALL",
 ): TorrentResult[] {
   let filtered = list;
 
   if (hideDead) {
-    // Sources without swarm data report seeders: 0 for everything (unknown, not
-    // dead), so the filter only judges rows whose source actually reports health.
     filtered = filtered.filter((r) => r.seeders > 0 || !getSource(r.source).reportsHealth);
+  }
+
+  if (qualityFilter !== "ALL") {
+    filtered = filtered.filter((r) => matchesQualityTag(r.name, qualityFilter));
   }
 
   const text = textFilter.trim().toLowerCase();
@@ -21,17 +25,15 @@ export function filterResults(
       const name = r.name.toLowerCase();
       let score = 0;
 
-      // Every token must be present
       const matchesAll = tokens.every((token) => name.includes(token));
       if (!matchesAll) return { r, score: 0 };
 
-      score += 10; // Base score for matching all tokens
+      score += 10;
 
       const normalizedText = tokens.join(" ");
       if (name.includes(normalizedText)) {
-        score += 50; // Exact substring gets highest boost
+        score += 50;
       } else {
-        // Boost if tokens appear in the same order
         let lastIndex = -1;
         let inOrder = true;
         for (const token of tokens) {

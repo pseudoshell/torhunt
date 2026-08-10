@@ -60,4 +60,14 @@ describe("filterResults", () => {
     // c: no match
     expect(filterResults(list, false, "ubuntu 24").map(x => x.infoHash)).toEqual(["a", "b", "d"]);
   });
+
+  it("filters by quality tag", () => {
+    const list = [
+      r({ infoHash: "a", name: "House.of.the.Dragon.S03E08.2160p.4K" }),
+      r({ infoHash: "b", name: "House.of.the.Dragon.S03E08.1080p" }),
+      r({ infoHash: "c", name: "Cyberpunk.2077-FitGirl" }),
+    ];
+    expect(filterResults(list, false, "", "4K").map((x) => x.infoHash)).toEqual(["a"]);
+    expect(filterResults(list, false, "", "FitGirl").map((x) => x.infoHash)).toEqual(["c"]);
+  });
 });

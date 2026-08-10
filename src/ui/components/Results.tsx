@@ -13,6 +13,8 @@ import { sortResults, nextSort, sortLabel, sortArrow, type Sort, type SortField 
 import { filterResults } from "../filter";
 import { COLOR, GUTTER, ICON, sourceStyle, type Theme } from "../theme";
 import { cleanText, formatBytes, formatCount, formatRelative, stripControl, truncate } from "../../util/format";
+import { QUALITY_TAGS, type QualityTag } from "../../util/tags";
+import { QualityFilterBar } from "./QualityFilterBar";
 import type { Source, TorrentResult } from "../../sources/types";
 
 type Mode = "list" | "search" | "detail" | "filter";
@@ -138,13 +140,14 @@ export function Results() {
   const [sort, setSort] = useState<Sort>("none");
   const [hideDead, setHideDead] = useState(false);
   const [textFilter, setTextFilter] = useState("");
+  const [qualityTag, setQualityTag] = useState<QualityTag | "ALL">("ALL");
   const results = useMemo(() => {
     const cat = CATEGORIES.find((c) => c.key === section);
     const base = cat?.group
       ? search.results.filter((r) => getSource(r.source).groups?.includes(cat.group!))
       : search.results;
-    return sortResults(filterResults(base, hideDead, textFilter), sort);
-  }, [search.results, section, sort, hideDead, textFilter]);
+    return sortResults(filterResults(base, hideDead, textFilter, qualityTag), sort);
+  }, [search.results, section, sort, hideDead, textFilter, qualityTag]);
 
   const focused = region === "content";
   const [mode, setMode] = useState<Mode>("list");
@@ -257,6 +260,22 @@ export function Results() {
         setHideDead((h) => !h);
         return;
       }
+      if (input === "q") {
+        const options: (QualityTag | "ALL")[] = ["ALL", ...QUALITY_TAGS];
+        setQualityTag((curr) => {
+          const idx = options.indexOf(curr);
+          const next = options[(idx + 1) % options.length];
+          return next ?? "ALL";
+        });
+        return;
+      }
+      if (input === "1") { setQualityTag("ALL"); return; }
+      if (input === "2") { setQualityTag("4K"); return; }
+      if (input === "3") { setQualityTag("1080p"); return; }
+      if (input === "4") { setQualityTag("720p"); return; }
+      if (input === "5") { setQualityTag("x265"); return; }
+      if (input === "6") { setQualityTag("FitGirl"); return; }
+      if (input === "7") { setQualityTag("FLAC"); return; }
       if (input === "f") {
         setMode("filter");
         return;
@@ -404,7 +423,10 @@ export function Results() {
             <Detail r={detail} width={Math.max(10, contentWidth - 4)} theme={theme} />
           ) : (
             <>
-              <Box>{status()}</Box>
+              <Box justifyContent="space-between" alignItems="center">
+                {status()}
+                <QualityFilterBar activeTag={qualityTag} theme={theme} />
+              </Box>
               <Box flexDirection="column" marginTop={results.length > 0 ? 0 : 0}>
                 {results.length > 0 ? (
                   <Box>

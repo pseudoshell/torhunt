@@ -29,6 +29,7 @@ export const HELP_GROUPS: HelpGroup[] = [
     title: "Search",
     hints: [
       { keys: "/", label: "Edit search" },
+      { keys: "q", label: "Quality tags (1-7)" },
       { keys: "f", label: "Filter list" },
       { keys: "d", label: "Download (shift+d: folder)" },
       { keys: "s", label: "Sort results" },
