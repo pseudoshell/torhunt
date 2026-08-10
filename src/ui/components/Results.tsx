@@ -441,15 +441,15 @@ export function Results() {
                   return (
                     <Box key={r.infoHash}>
                       <Box width={GUTTER} flexShrink={0}>
-                        <Text color={theme.colors.accent} bold>{here ? ICON.pointer : " "}</Text>
+                        <Text color={here ? theme.colors.bright : theme.colors.accent} bold>{here ? ICON.pointer : " "}</Text>
                       </Box>
                       <Box width={numW} flexShrink={0} justifyContent="flex-end">
-                        <Text color={here ? theme.colors.accent : theme.colors.rule}>{index + 1}</Text>
+                        <Text color={here ? theme.colors.bright : theme.colors.rule} bold={here}>{index + 1}</Text>
                       </Box>
                       <Box flexGrow={1} minWidth={0} marginLeft={1}>
                         <Text
                           wrap="truncate-end"
-                          color={here ? theme.colors.text : undefined}
+                          color={here ? theme.colors.bright : undefined}
                           dimColor={!here}
                           bold={here}
                         >

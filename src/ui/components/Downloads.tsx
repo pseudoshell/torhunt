@@ -185,7 +185,7 @@ export function Downloads() {
           <Box key={it.id} flexDirection="column">
             <Box>
               <Box width={MARK} flexShrink={0}>
-                <Text color={theme.colors.accent} bold>
+                <Text color={here ? theme.colors.bright : theme.colors.accent} bold>
                   {here ? ICON.pointer : ""}
                 </Text>
               </Box>
@@ -196,7 +196,7 @@ export function Downloads() {
                 <Text
                   wrap="truncate-end"
                   bold={here}
-                  color={here ? theme.colors.accent : undefined}
+                  color={here ? theme.colors.bright : undefined}
                   dimColor={!here}
                 >
                   {cleanText(it.name)}
