@@ -1,6 +1,6 @@
 {
   "name": "torhunt",
-  "version": "1.6.0",
+  "version": "1.9.0",
   "description": "A sleek, zero-setup torrent finder and downloader that lives right in your terminal.",
   "type": "module",
   "bin": {
@@ -48,11 +48,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/baairon/torlink.git"
+    "url": "git+https://github.com/pseudoshell/torhunt.git"
   },
-  "homepage": "https://torlink.bairon.dev",
+  "homepage": "https://github.com/pseudoshell/torhunt",
   "bugs": {
-    "url": "https://github.com/baairon/torlink/issues"
+    "url": "https://github.com/pseudoshell/torhunt/issues"
   },
   "publishConfig": {
     "access": "public"

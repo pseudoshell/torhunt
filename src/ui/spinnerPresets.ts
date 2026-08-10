@@ -44,7 +44,7 @@ export const SPINNERS: readonly SpinnerPreset[] = [
   },
 ] as const;
 
-export const DEFAULT_SPINNER = SPINNERS[0]!;
+export const DEFAULT_SPINNER = SPINNERS.find((s) => s.id === "meter") ?? SPINNERS[0]!;
 
 export function getSpinner(id?: string): SpinnerPreset {
   if (!id) return DEFAULT_SPINNER;

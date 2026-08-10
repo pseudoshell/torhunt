@@ -2,35 +2,21 @@ import { Box, Text } from "ink";
 import { COL_GAP, FRAME, KEY_W, pickLayout } from "../helpLayout";
 import { HELP_GROUPS } from "../keymap";
 import { useStore } from "../store";
-import { COLOR, ICON, RULE, lerpHex } from "../theme";
-
-const CARD_BORDER = lerpHex(COLOR.accent, RULE, 0.55);
+import { ICON } from "../theme";
+import { Panel } from "./Panel";
 
 const FOOT_FULL = "Your downloaded files always stay on disk.";
 
 export function HelpOverlay() {
   const { cols, rows, theme } = useStore();
-  const cardBorder = lerpHex(theme.colors.accent, theme.colors.rule, 0.55);
   const m = pickLayout(cols);
   const width = Math.min(m.width, cols - 2);
-  // Condense when the full card (gridH + 9 rows, under 3 rows of app chrome)
-  // exceeds the terminal, or the card is too narrow for the two-line footer.
-  const short = rows < m.gridH + 12 || width - FRAME < FOOT_FULL.length;
+  // Condense when the full card exceeds the terminal, or the card is too narrow.
+  const short = rows < m.gridH + 10 || width - FRAME < FOOT_FULL.length;
 
   return (
-    <Box
-      flexDirection="column"
-      alignSelf="flex-start"
-      width={width}
-      borderStyle="round"
-      borderColor={cardBorder}
-      paddingX={1}
-      paddingY={short ? 0 : 1}
-    >
-      <Text bold color={theme.colors.accent}>
-        Keyboard
-      </Text>
-      <Box marginTop={1} flexDirection="row">
+    <Panel title="shortcuts" width={width} focused>
+      <Box marginTop={short ? 0 : 1} flexDirection="row">
         {m.layout.map((col, ci) => (
           <Box
             key={col.join("-")}
@@ -46,11 +32,11 @@ export function HelpOverlay() {
                   flexDirection="column"
                   marginTop={pos > 0 ? 1 : 0}
                 >
-                  <Text bold>{group.title}</Text>
+                  <Text bold color={theme.colors.bright}>{group.title}</Text>
                   {group.hints.map((h) => (
                     <Box key={h.keys + h.label}>
                       <Box width={KEY_W[gi]} flexShrink={0}>
-                        <Text color={theme.colors.alt}>{h.keys}</Text>
+                        <Text color={theme.colors.accent}>{h.keys}</Text>
                       </Box>
                       <Text dimColor wrap="truncate-end">
                         {h.label}
@@ -64,15 +50,17 @@ export function HelpOverlay() {
         ))}
       </Box>
       {short ? (
-        <Text dimColor wrap="truncate-end">
-          {`? or esc closes ${ICON.dot} files stay on disk`}
-        </Text>
+        <Box marginTop={1}>
+          <Text dimColor wrap="truncate-end">
+            {`? or esc closes ${ICON.dot} files stay on disk`}
+          </Text>
+        </Box>
       ) : (
         <Box marginTop={1} flexDirection="column">
           <Text dimColor>{FOOT_FULL}</Text>
-          <Text dimColor>Press ? or esc to close</Text>
+          <Text color={theme.colors.alt}>Press ? or esc to close</Text>
         </Box>
       )}
-    </Box>
+    </Panel>
   );
 }

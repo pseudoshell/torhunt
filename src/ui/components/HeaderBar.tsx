@@ -19,7 +19,6 @@ export function HeaderBar({ width }: { width: number }) {
     .reduce((acc, s) => acc + s.uploadSpeed, 0);
 
   const showStats = width >= 75;
-  const showThemeBadge = width >= 90;
 
   return (
     <Box
@@ -65,14 +64,6 @@ export function HeaderBar({ width }: { width: number }) {
                 </Text>
               </Box>
             ) : null}
-          </Box>
-        ) : null}
-
-        {showThemeBadge ? (
-          <Box flexShrink={0}>
-            <Text color={theme.colors.alt} dimColor>
-              {`[${theme.name}]`}
-            </Text>
           </Box>
         ) : null}
       </Box>

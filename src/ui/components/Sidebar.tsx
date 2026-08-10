@@ -27,6 +27,7 @@ const GROUPS: NavGroup[] = [
   {
     title: "TRANSFERS",
     items: [
+      { key: "bookmarks", label: "Bookmarks" },
       { key: "downloads", label: "Downloads" },
       { key: "seeding", label: "Seeding" },
       { key: "completed", label: "Completed" },
@@ -45,12 +46,13 @@ const NAV: NavItem[] = GROUPS.flatMap((g) => g.items);
 export const RAIL_WIDTH = 15;
 
 export function Sidebar() {
-  const { section, setSection, region, setRegion, queue, theme } = useStore();
+  const { section, setSection, region, setRegion, queue, bookmarks, theme } = useStore();
   const focused = region === "sidebar";
   const idx = Math.max(0, NAV.findIndex((n) => n.key === section));
   useQueueItems(queue);
   const active = queue.activeCount;
   const seeding = queue.seedingCount;
+  const bookmarkCount = bookmarks.length;
 
   useInput(
     (input, key) => {
@@ -74,7 +76,7 @@ export function Sidebar() {
           ) : null}
           {group.items.map((item) => {
             const selected = item.key === section;
-            const count = item.key === "downloads" ? active : item.key === "seeding" ? seeding : 0;
+            const count = item.key === "downloads" ? active : item.key === "seeding" ? seeding : item.key === "bookmarks" ? bookmarkCount : 0;
 
             return (
               <Box key={item.key} justifyContent="space-between">

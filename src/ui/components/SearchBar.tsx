@@ -52,6 +52,7 @@ export function SearchBar({
             <TextField
               defaultValue={value}
               placeholder={placeholder}
+              history={store?.searchHistory}
               width={Math.max(1, innerW - 3)}
               onSubmit={onSubmit}
               onChange={onChange}

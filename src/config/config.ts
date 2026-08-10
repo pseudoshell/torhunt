@@ -2,18 +2,24 @@ import { promises as fs } from "node:fs";
 import { configFile, defaultDownloadDir } from "./paths";
 import { serializeWrites, writeJsonAtomic } from "../util/atomic";
 
+export type OnCompleteAction = "none" | "sleep" | "shutdown";
+
 export interface Config {
   downloadDir: string;
   trackers: string[];
   theme: string;
   spinner: string;
+  preventSleep: boolean;
+  onComplete: OnCompleteAction;
 }
 
 export const defaultConfig: Config = {
   downloadDir: defaultDownloadDir,
   trackers: [],
   theme: "electric-cyan",
-  spinner: "dots",
+  spinner: "meter",
+  preventSleep: true,
+  onComplete: "none",
 };
 
 export async function loadConfig(): Promise<Config> {
@@ -38,6 +44,14 @@ export async function loadConfig(): Promise<Config> {
         typeof parsed.spinner === "string" && parsed.spinner
           ? parsed.spinner
           : defaultConfig.spinner,
+      preventSleep:
+        typeof parsed.preventSleep === "boolean"
+          ? parsed.preventSleep
+          : defaultConfig.preventSleep,
+      onComplete:
+        parsed.onComplete === "sleep" || parsed.onComplete === "shutdown" || parsed.onComplete === "none"
+          ? parsed.onComplete
+          : defaultConfig.onComplete,
     };
     return cfg;
   } catch {

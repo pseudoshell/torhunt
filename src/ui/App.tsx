@@ -6,6 +6,13 @@ import { normalizeDownloadDir } from "../config/folder";
 import { DownloadQueue } from "../download/queue";
 import { loadQueue, loadSeeds } from "../download/persist";
 import { loadHistory } from "../download/history";
+import { loadBookmarks, saveBookmarks, type BookmarkItem } from "../download/bookmarks";
+import {
+  addSearchQuery,
+  loadSearchHistory,
+  saveSearchHistory,
+  clearSearchHistory,
+} from "../sources/searchHistory";
 import { reconcileQueue } from "../download/reconcile";
 import {
   BOOT_SETTLE_MS,
@@ -19,6 +26,12 @@ import { magnetFromTorrentFile } from "../sources/torrentFile";
 import { readClipboard, writeClipboard } from "../util/clipboard";
 import { openFolder } from "../util/openFolder";
 import { cleanText, formatBytes, truncate } from "../util/format";
+import {
+  acquireKeepAwake,
+  releaseKeepAwake,
+  triggerSleep,
+  triggerShutdown,
+} from "../util/power";
 import {
   StoreContext,
   type CaptureMode,
@@ -39,6 +52,7 @@ import { HelpOverlay } from "./components/HelpOverlay";
 import { Results } from "./components/Results";
 import { Downloads } from "./components/Downloads";
 import { Seeding } from "./components/Seeding";
+import { BookmarksView } from "./components/BookmarksView";
 import { CompletedView } from "./components/CompletedView";
 import { SettingsView } from "./components/SettingsView";
 import { Spinner } from "./components/Spinner";
@@ -108,10 +122,18 @@ export function App({
   const [editingSpinner, setEditingSpinner] = useState(false);
   const [previewSpinnerId, setPreviewSpinnerId] = useState<string | null>(null);
   const [searchModeTrigger, setSearchModeTrigger] = useState(0);
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
   const triggerSearch = useCallback(() => {
     setShowHelp(false);
-    if (section === "downloads" || section === "seeding" || section === "completed" || section === "settings") {
+    if (
+      section === "downloads" ||
+      section === "seeding" ||
+      section === "bookmarks" ||
+      section === "completed" ||
+      section === "settings"
+    ) {
       setSection("all");
     }
     setRegion("content");
@@ -155,6 +177,12 @@ export function App({
         q.restore(reconcileQueue(await loadQueue()), { safe: safeBoot });
         q.restoreHistory(await loadHistory());
         q.restoreSeeds(await loadSeeds(), { safe: safeBoot });
+        const loadedBookmarks = await loadBookmarks();
+        const loadedSearchHistory = await loadSearchHistory();
+        if (alive) {
+          setBookmarks(loadedBookmarks);
+          setSearchHistory(loadedSearchHistory);
+        }
       } catch (e) {
         logCrash("boot-restore", e);
       }
@@ -205,14 +233,39 @@ export function App({
   }, []);
 
   useEffect(() => {
-    if (!queue) return;
-    const onCompleted = (name: string): void =>
-      setNotice(`${ICON.done} ${truncate(cleanText(name), 40)}`);
-    queue.on("completed", onCompleted);
-    return () => {
-      queue.off("completed", onCompleted);
+    if (!queue || !config) return;
+
+    const updatePowerState = () => {
+      const active = queue.activeCount > 0;
+      if (active && (config.preventSleep ?? true)) {
+        acquireKeepAwake();
+      } else {
+        releaseKeepAwake();
+      }
     };
-  }, [queue]);
+
+    updatePowerState();
+    queue.on("change", updatePowerState);
+
+    const onCompleted = (name: string): void => {
+      setNotice(`${ICON.done} ${truncate(cleanText(name), 40)}`);
+      if (queue.activeCount === 0 && queue.getItems().length === 0) {
+        releaseKeepAwake();
+        if (config.onComplete === "sleep") {
+          triggerSleep();
+        } else if (config.onComplete === "shutdown") {
+          triggerShutdown();
+        }
+      }
+    };
+    queue.on("completed", onCompleted);
+
+    return () => {
+      queue.off("change", updatePowerState);
+      queue.off("completed", onCompleted);
+      releaseKeepAwake();
+    };
+  }, [queue, config]);
 
   useEffect(
     () => () => {
@@ -442,6 +495,66 @@ export function App({
     [queue, config],
   );
 
+  const addBookmark = useCallback(
+    (input: {
+      id: string;
+      name: string;
+      magnet: string;
+      source?: SourceId;
+      sizeBytes?: number;
+    }) => {
+      setBookmarks((prev) => {
+        if (prev.some((b) => b.id === input.id)) {
+          setNotice(`Already bookmarked: ${truncate(cleanText(input.name), 40)}`);
+          return prev;
+        }
+        const next: BookmarkItem[] = [
+          {
+            id: input.id,
+            name: input.name,
+            magnet: input.magnet,
+            source: input.source,
+            sizeBytes: input.sizeBytes ?? 0,
+            bookmarkedAt: Date.now(),
+          },
+          ...prev,
+        ];
+        void saveBookmarks(next);
+        setNotice(`★ Bookmarked: ${truncate(cleanText(input.name), 40)}`);
+        return next;
+      });
+    },
+    [],
+  );
+
+  const removeBookmark = useCallback((id: string) => {
+    setBookmarks((prev) => {
+      const next = prev.filter((b) => b.id !== id);
+      void saveBookmarks(next);
+      setNotice("Bookmark removed");
+      return next;
+    });
+  }, []);
+
+  const clearBookmarks = useCallback(() => {
+    setBookmarks([]);
+    void saveBookmarks([]);
+    setNotice("All bookmarks cleared");
+  }, []);
+
+  const pushSearchHistory = useCallback((q: string) => {
+    setSearchHistory((prev) => {
+      const next = addSearchQuery(prev, q);
+      void saveSearchHistory(next);
+      return next;
+    });
+  }, []);
+
+  const clearSearchHistoryCallback = useCallback(() => {
+    setSearchHistory([]);
+    void clearSearchHistory();
+  }, []);
+
   const submitQuery = useCallback(
     (raw: string) => {
       const q = raw.trim();
@@ -456,13 +569,14 @@ export function App({
           setView("browser");
           return;
         }
+        pushSearchHistory(q);
       }
       setQuery(q);
       setView("browser");
       if (section === "downloads") setSection("all");
       setRegion("content");
     },
-    [section, startDownload],
+    [section, startDownload, pushSearchHistory],
   );
 
   const pasteFromClipboard = useCallback(async () => {
@@ -548,6 +662,14 @@ export function App({
       openFolderPicker: () => setEditingFolder(true),
       searchModeTrigger,
       triggerSearch,
+      bookmarks,
+      addBookmark,
+      removeBookmark,
+      clearBookmarks,
+      searchHistory,
+      pushSearchHistory,
+      clearSearchHistory: clearSearchHistoryCallback,
+      updateVersion,
       quitAll,
       listRows,
       compact,
@@ -565,15 +687,8 @@ export function App({
     setSpinnerId,
     view,
     query,
-    submitQuery,
     section,
     region,
-    showHelp,
-    editingFolder,
-    editingTrackers,
-    editingTheme,
-    editingSpinner,
-    pendingDownload,
     captureMode,
     downloadFocus,
     seedFocus,
@@ -585,13 +700,28 @@ export function App({
     exportTorrent,
     fetchAndExportTorrent,
     notice,
+    showHelp,
+    editingFolder,
+    editingTrackers,
+    editingTheme,
+    editingSpinner,
+    pendingDownload,
+    searchModeTrigger,
+    triggerSearch,
+    bookmarks,
+    addBookmark,
+    removeBookmark,
+    clearBookmarks,
+    searchHistory,
+    pushSearchHistory,
+    clearSearchHistoryCallback,
+    updateVersion,
+    quitAll,
     listRows,
     compact,
     contentWidth,
     cols,
     rows,
-    setConfig,
-    quitAll,
   ]);
 
   useInput(
@@ -800,6 +930,8 @@ export function App({
               <Downloads />
             ) : section === "seeding" ? (
               <Seeding />
+            ) : section === "bookmarks" ? (
+              <BookmarksView />
             ) : section === "completed" ? (
               <CompletedView />
             ) : section === "settings" ? (
@@ -823,7 +955,10 @@ export function App({
                 : "flex"
             }
           >
-            <Footer hints={footerHints(region, section, downloadFocus, seedFocus, resultFocus)} />
+            <Footer
+              width={ruleWidth}
+              hints={footerHints(region, section, downloadFocus, seedFocus, resultFocus)}
+            />
           </Box>
         ) : null}
       </Box>
