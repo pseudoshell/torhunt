@@ -116,7 +116,7 @@ export function SettingsView() {
   return (
     <Panel title="settings" width={contentWidth} focused={focused} height={panelH}>
       <Box flexDirection="column" justifyContent="space-between" height={panelH}>
-        <Box flexDirection="column" gap={1}>
+        <Box flexDirection="column">
           {/* Item 0: Download Directory */}
           <Box justifyContent="space-between" alignItems="center">
             <Box>
@@ -175,7 +175,7 @@ export function SettingsView() {
             </Box>
             <Box marginLeft={2}>
               <Text color={(config.preventSleep ?? true) ? theme.colors.good : theme.colors.alt} bold>
-                {(config.preventSleep ?? true) ? "[Enabled (Keep PC Awake)]" : "[Disabled (Allow Sleep)]"}
+                {(config.preventSleep ?? true) ? "[Enabled]" : "[Disabled]"}
               </Text>
             </Box>
           </Box>
@@ -199,9 +199,9 @@ export function SettingsView() {
                 bold
               >
                 {config.onComplete === "sleep"
-                  ? "[Put PC to Sleep 🌙]"
+                  ? "[Put PC to Sleep]"
                   : config.onComplete === "shutdown"
-                  ? "[Shutdown PC ⚡]"
+                  ? "[Shutdown PC]"
                   : "[Stay On]"}
               </Text>
             </Box>
