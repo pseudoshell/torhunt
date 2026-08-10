@@ -111,7 +111,7 @@ export function SettingsView() {
             </Text>
           </Box>
           <Box marginLeft={2}>
-            <Text color={theme.colors.alt} bold>
+            <Text color={theme.colors.accent} bold>
               {`[${theme.name}]`}
             </Text>
           </Box>
@@ -125,7 +125,7 @@ export function SettingsView() {
             </Text>
           </Box>
           <Box marginLeft={2}>
-            <Text color={theme.colors.good} bold>
+            <Text color={theme.colors.accent} bold>
               {`[${spinner.name}] (${spinner.frames[0]})`}
             </Text>
           </Box>
