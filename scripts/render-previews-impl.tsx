@@ -160,27 +160,17 @@ function save(
   }
   writeFileSync(
     join(OUT_DIR, `${name}.svg`),
-    ansiToSvg(frame, { cols: COLS, title: "torlink", ...extra }),
+    ansiToSvg(frame, { cols: COLS, title: "torhunt", ...extra }),
   );
   console.log(`preview/${name}.svg`);
 }
 
-const CATEGORIES = sourcesByGroup()
-  .map((g) => g.group.toLowerCase())
-  .join(`  ${ICON.dot}  `);
-
 save(
   "splash",
   makeStore({ view: "splash", region: "content" }),
-  <Box height={18} flexDirection="column" justifyContent="center" alignItems="center" width={COLS}>
+  <Box height={16} flexDirection="column" justifyContent="center" alignItems="center" width={COLS}>
     <Logo />
-    <Box marginTop={2}>
-      <Text color={COLOR.text}>A curated, terminal-native torrent downloader.</Text>
-    </Box>
-    <Box>
-      <Text dimColor>{CATEGORIES}</Text>
-    </Box>
-    <Box marginTop={1} width={62}>
+    <Box marginTop={2} width={62}>
       <SearchBar width={62} value="" editing placeholder="Search or paste a magnet link…" onSubmit={() => {}} />
     </Box>
     <Box marginTop={1}>
@@ -188,8 +178,7 @@ save(
         <Text color={COLOR.alt}>↵</Text>
         <Text dimColor> search</Text>
         <Text dimColor>{`  ${ICON.dot}  `}</Text>
-        <Text dimColor>empty </Text>
-        <Text color={COLOR.alt}>↵</Text>
+        <Text color={COLOR.alt}>⇥</Text>
         <Text dimColor> browse</Text>
         <Text dimColor>{`  ${ICON.dot}  `}</Text>
         <Text color={COLOR.alt}>^c</Text>
