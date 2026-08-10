@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import type { Config } from "../config/config";
 import type { DownloadQueue } from "../download/queue";
 import type { HistoryItem } from "../download/history";
+import type { BookmarkItem } from "../download/bookmarks";
 import type { QueueItem, SeedItem } from "../download/types";
 import type { SourceGroup, SourceId } from "../sources/types";
 
@@ -9,7 +10,7 @@ export type View = "splash" | "browser";
 
 export type Category = "all" | "games" | "movies" | "tv" | "anime";
 
-export type Section = Category | "downloads" | "seeding" | "completed" | "settings";
+export type Section = Category | "downloads" | "seeding" | "bookmarks" | "completed" | "settings";
 
 export const CATEGORIES: { key: Category; label: string; group?: SourceGroup }[] = [
   { key: "all", label: "All" },
@@ -94,6 +95,11 @@ export interface Store {
   openFolderPicker: () => void;
   searchModeTrigger: number;
   triggerSearch: () => void;
+
+  bookmarks: BookmarkItem[];
+  addBookmark: (input: { id: string; name: string; magnet: string; source?: SourceId; sizeBytes?: number }) => void;
+  removeBookmark: (id: string) => void;
+  clearBookmarks: () => void;
 
   quitAll: () => void;
 

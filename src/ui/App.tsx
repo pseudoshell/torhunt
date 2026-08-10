@@ -6,6 +6,7 @@ import { normalizeDownloadDir } from "../config/folder";
 import { DownloadQueue } from "../download/queue";
 import { loadQueue, loadSeeds } from "../download/persist";
 import { loadHistory } from "../download/history";
+import { loadBookmarks, saveBookmarks, type BookmarkItem } from "../download/bookmarks";
 import { reconcileQueue } from "../download/reconcile";
 import {
   BOOT_SETTLE_MS,
@@ -39,6 +40,7 @@ import { HelpOverlay } from "./components/HelpOverlay";
 import { Results } from "./components/Results";
 import { Downloads } from "./components/Downloads";
 import { Seeding } from "./components/Seeding";
+import { BookmarksView } from "./components/BookmarksView";
 import { CompletedView } from "./components/CompletedView";
 import { SettingsView } from "./components/SettingsView";
 import { Spinner } from "./components/Spinner";
@@ -108,10 +110,17 @@ export function App({
   const [editingSpinner, setEditingSpinner] = useState(false);
   const [previewSpinnerId, setPreviewSpinnerId] = useState<string | null>(null);
   const [searchModeTrigger, setSearchModeTrigger] = useState(0);
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
 
   const triggerSearch = useCallback(() => {
     setShowHelp(false);
-    if (section === "downloads" || section === "seeding" || section === "completed" || section === "settings") {
+    if (
+      section === "downloads" ||
+      section === "seeding" ||
+      section === "bookmarks" ||
+      section === "completed" ||
+      section === "settings"
+    ) {
       setSection("all");
     }
     setRegion("content");
@@ -155,6 +164,8 @@ export function App({
         q.restore(reconcileQueue(await loadQueue()), { safe: safeBoot });
         q.restoreHistory(await loadHistory());
         q.restoreSeeds(await loadSeeds(), { safe: safeBoot });
+        const loadedBookmarks = await loadBookmarks();
+        if (alive) setBookmarks(loadedBookmarks);
       } catch (e) {
         logCrash("boot-restore", e);
       }
@@ -442,6 +453,53 @@ export function App({
     [queue, config],
   );
 
+  const addBookmark = useCallback(
+    (input: {
+      id: string;
+      name: string;
+      magnet: string;
+      source?: SourceId;
+      sizeBytes?: number;
+    }) => {
+      setBookmarks((prev) => {
+        if (prev.some((b) => b.id === input.id)) {
+          setNotice(`Already bookmarked: ${truncate(cleanText(input.name), 40)}`);
+          return prev;
+        }
+        const next: BookmarkItem[] = [
+          {
+            id: input.id,
+            name: input.name,
+            magnet: input.magnet,
+            source: input.source,
+            sizeBytes: input.sizeBytes ?? 0,
+            bookmarkedAt: Date.now(),
+          },
+          ...prev,
+        ];
+        void saveBookmarks(next);
+        setNotice(`★ Bookmarked: ${truncate(cleanText(input.name), 40)}`);
+        return next;
+      });
+    },
+    [],
+  );
+
+  const removeBookmark = useCallback((id: string) => {
+    setBookmarks((prev) => {
+      const next = prev.filter((b) => b.id !== id);
+      void saveBookmarks(next);
+      setNotice("Bookmark removed");
+      return next;
+    });
+  }, []);
+
+  const clearBookmarks = useCallback(() => {
+    setBookmarks([]);
+    void saveBookmarks([]);
+    setNotice("All bookmarks cleared");
+  }, []);
+
   const submitQuery = useCallback(
     (raw: string) => {
       const q = raw.trim();
@@ -548,6 +606,10 @@ export function App({
       openFolderPicker: () => setEditingFolder(true),
       searchModeTrigger,
       triggerSearch,
+      bookmarks,
+      addBookmark,
+      removeBookmark,
+      clearBookmarks,
       quitAll,
       listRows,
       compact,
@@ -565,15 +627,8 @@ export function App({
     setSpinnerId,
     view,
     query,
-    submitQuery,
     section,
     region,
-    showHelp,
-    editingFolder,
-    editingTrackers,
-    editingTheme,
-    editingSpinner,
-    pendingDownload,
     captureMode,
     downloadFocus,
     seedFocus,
@@ -585,13 +640,24 @@ export function App({
     exportTorrent,
     fetchAndExportTorrent,
     notice,
+    showHelp,
+    editingFolder,
+    editingTrackers,
+    editingTheme,
+    editingSpinner,
+    pendingDownload,
+    searchModeTrigger,
+    triggerSearch,
+    bookmarks,
+    addBookmark,
+    removeBookmark,
+    clearBookmarks,
+    quitAll,
     listRows,
     compact,
     contentWidth,
     cols,
     rows,
-    setConfig,
-    quitAll,
   ]);
 
   useInput(
@@ -800,6 +866,8 @@ export function App({
               <Downloads />
             ) : section === "seeding" ? (
               <Seeding />
+            ) : section === "bookmarks" ? (
+              <BookmarksView />
             ) : section === "completed" ? (
               <CompletedView />
             ) : section === "settings" ? (

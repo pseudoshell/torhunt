@@ -134,6 +134,7 @@ export function Results() {
     listRows,
     theme,
     searchModeTrigger,
+    addBookmark,
   } = useStore();
 
   const search = useConcurrentSearch(query);
@@ -306,6 +307,11 @@ export function Results() {
         if (results[clamped]) copyResultMagnet(results[clamped]!);
         return;
       }
+      if (input === "b") {
+        const r = results[clamped];
+        if (r) addBookmark({ id: r.infoHash, name: r.name, magnet: r.magnet, source: r.source, sizeBytes: r.sizeBytes });
+        return;
+      }
       if (input === "S") {
         if (results[clamped]) {
           const r = results[clamped]!;
@@ -329,6 +335,14 @@ export function Results() {
       } else if (input === "d" && detail) openDownload(detail);
       else if (input === "D" && detail) openDownloadTo(detail);
       else if (input === "y" && detail) copyResultMagnet(detail);
+      else if (input === "b" && detail)
+        addBookmark({
+          id: detail.infoHash,
+          name: detail.name,
+          magnet: detail.magnet,
+          source: detail.source,
+          sizeBytes: detail.sizeBytes,
+        });
       else if (input === "e" && detail)
         fetchAndExportTorrent({ id: detail.infoHash, name: detail.name, magnet: detail.magnet });
     },

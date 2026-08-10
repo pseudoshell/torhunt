@@ -32,6 +32,7 @@ export const HELP_GROUPS: HelpGroup[] = [
       { keys: "q / 1-7", label: "Quality filter (1-7)" },
       { keys: "f", label: "Filter list" },
       { keys: "d", label: "Download (shift+d: folder)" },
+      { keys: "b", label: "Bookmark for later" },
       { keys: "s", label: "Sort results" },
       { keys: "z", label: "Hide dead torrents" },
       { keys: "y", label: "Copy magnet" },
@@ -57,6 +58,15 @@ export const HELP_GROUPS: HelpGroup[] = [
       { keys: "p", label: "Pause/resume" },
       { keys: "c", label: "Remove (shift+c: all)" },
       { keys: "e", label: "Open folder" },
+    ],
+  },
+  {
+    title: "Bookmarks",
+    hints: [
+      { keys: "d", label: "Download (shift+d: folder)" },
+      { keys: "b / c", label: "Remove bookmark" },
+      { keys: "y", label: "Copy magnet" },
+      { keys: "C", label: "Clear all" },
     ],
   },
 ];
@@ -104,6 +114,16 @@ export function footerHints(
       seedFocus === "seeding" ? "Pause" : seedFocus === "missing" ? "Retry" : "Resume";
     return [{ keys: "p", label }, { keys: "c", label: "Remove from list" }, FOLDER, SWITCH, ALWAYS];
   }
+  if (section === "bookmarks") {
+    return [
+      NAVIGATE,
+      { keys: "d", label: "Download" },
+      { keys: "b", label: "Remove" },
+      { keys: "y", label: "Copy" },
+      SWITCH,
+      ALWAYS,
+    ];
+  }
   if (section === "completed") {
     return [
       NAVIGATE,
@@ -136,6 +156,7 @@ export function footerHints(
   return [
     NAVIGATE,
     { keys: "d", label: "Download" },
+    { keys: "b", label: "Bookmark" },
     { keys: "q", label: "Quality" },
     resultFocus === "detail" ? EXPORT : { keys: "s", label: "Sort" },
     { keys: "/", label: "Search" },

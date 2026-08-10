@@ -21,6 +21,8 @@ export const queueFile = path.join(dataDir, "queue.json");
 
 export const historyFile = path.join(dataDir, "history.json");
 
+export const bookmarksFile = path.join(dataDir, "bookmarks.json");
+
 export const seedsFile = path.join(dataDir, "seeds.json");
 
 // Per-torrent .torrent metadata, captured during download so a re-seed can
