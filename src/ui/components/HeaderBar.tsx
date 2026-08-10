@@ -28,7 +28,7 @@ export function HeaderBar({ width }: { width: number }) {
       alignItems="center"
     >
       <Box flexShrink={0}>
-        <Logo />
+        <Logo layout="inline" />
       </Box>
 
       <Box flexGrow={1} justifyContent="flex-end" alignItems="center" marginLeft={2}>

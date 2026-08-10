@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Box, Text } from "ink";
-import { LOGO_LINES, SPROUT_CELLS } from "../logo";
+import { LOGO_LINES, WORDMARK_LINES, SPROUT_CELLS } from "../logo";
 import { DEFAULT_THEME, lerpHex, type Theme } from "../theme";
 import { StoreContext } from "../store";
 
@@ -44,13 +44,14 @@ function getSheen(tX: number, tY: number, theme: Theme, frame: number): string {
 export function Logo({
   theme: customTheme,
   animated = true,
+  layout = "stacked",
 }: {
   theme?: Theme;
   animated?: boolean;
+  layout?: "stacked" | "inline";
 } = {}) {
   const store = useContext(StoreContext);
   const theme = customTheme ?? store?.theme ?? DEFAULT_THEME;
-  const rows = LOGO_LINES.length;
   const [frame, setFrame] = useState(0);
 
   useEffect(() => {
@@ -60,6 +61,47 @@ export function Logo({
     }, 50);
     return () => clearInterval(timer);
   }, [animated]);
+
+  if (layout === "inline") {
+    const cycleFrame = frame % 90;
+    let anchorColor = theme.colors.sprout;
+    if (cycleFrame <= 36) {
+      const sweepT = cycleFrame / 36;
+      if (sweepT < 0.3) {
+        anchorColor = theme.colors.bright;
+      }
+    }
+
+    return (
+      <Box alignItems="center">
+        <Box marginRight={1}>
+          <Text color={anchorColor}>⚓</Text>
+        </Box>
+        <Box flexDirection="column">
+          {WORDMARK_LINES.map((line, row) => {
+            const tY = row / Math.max(1, WORDMARK_LINES.length - 1);
+            const chars = [...line];
+            const last = Math.max(1, chars.length - 1);
+            return (
+              <Box key={row}>
+                {chars.map((ch, i) => {
+                  if (ch === " ") return <Text key={i}> </Text>;
+                  const tX = i / last;
+                  return (
+                    <Text key={i} bold color={getSheen(tX, tY, theme, frame)}>
+                      {ch}
+                    </Text>
+                  );
+                })}
+              </Box>
+            );
+          })}
+        </Box>
+      </Box>
+    );
+  }
+
+  const rows = LOGO_LINES.length;
 
   return (
     <Box flexDirection="column">
@@ -76,22 +118,22 @@ export function Logo({
               if (ch === " ") return <Text key={i}> </Text>;
 
               const tX = i / last;
-              const isSprout = SPROUT_CELLS.has(`${row},${i}`);
+              const isAnchor = SPROUT_CELLS.has(`${row},${i}`);
 
-              if (isSprout) {
+              if (isAnchor) {
                 const cycleFrame = frame % 90;
-                let sproutColor = theme.colors.sprout;
+                let anchorColor = theme.colors.sprout;
                 if (cycleFrame <= 36) {
                   const sweepT = cycleFrame / 36;
                   const beamCenter = sweepT * 1.6 - 0.3;
                   const dist = Math.abs(tX - beamCenter);
                   if (dist < 0.22) {
                     const peak = theme.colors.sheenPeak || "#ffffff";
-                    sproutColor = lerpHex(peak, theme.colors.sprout, dist / 0.22);
+                    anchorColor = lerpHex(peak, theme.colors.sprout, dist / 0.22);
                   }
                 }
                 return (
-                  <Text key={i} bold color={sproutColor}>
+                  <Text key={i} color={anchorColor}>
                     {ch}
                   </Text>
                 );
