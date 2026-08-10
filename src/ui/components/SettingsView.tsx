@@ -37,7 +37,33 @@ export function SettingsView() {
     { id: "downloadDir", label: "Download Folder" },
     { id: "theme", label: "Color Theme" },
     { id: "spinner", label: "Spinner Loader" },
+    { id: "preventSleep", label: "Stay Awake" },
+    { id: "onComplete", label: "When Finished" },
   ];
+
+  const togglePreventSleep = () => {
+    const nextVal = !(config.preventSleep ?? true);
+    const nextCfg = { ...config, preventSleep: nextVal };
+    setConfig(nextCfg);
+    saveConfig(nextCfg);
+    setNotice(nextVal ? "Stay Awake enabled: OS will not sleep while downloading" : "Stay Awake disabled: Standard OS sleep enabled");
+  };
+
+  const cycleOnComplete = () => {
+    const current = config.onComplete ?? "none";
+    const next: "none" | "sleep" | "shutdown" =
+      current === "none" ? "sleep" : current === "sleep" ? "shutdown" : "none";
+    const nextCfg = { ...config, onComplete: next };
+    setConfig(nextCfg);
+    saveConfig(nextCfg);
+    const label =
+      next === "sleep"
+        ? "When downloads finish: Put PC to Sleep"
+        : next === "shutdown"
+        ? "When downloads finish: Shutdown PC"
+        : "When downloads finish: Stay on (Do nothing)";
+    setNotice(label);
+  };
 
   useInput(
     (input, key) => {
@@ -64,6 +90,10 @@ export function SettingsView() {
           openThemePicker();
         } else if (item?.id === "spinner") {
           openSpinnerPicker();
+        } else if (item?.id === "preventSleep") {
+          togglePreventSleep();
+        } else if (item?.id === "onComplete") {
+          cycleOnComplete();
         }
       }
     },
@@ -136,9 +166,50 @@ export function SettingsView() {
             </Box>
           </Box>
 
+          {/* Item 3: Stay Awake */}
+          <Box justifyContent="space-between" alignItems="center">
+            <Box>
+              <Text color={selectedIdx === 3 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 3 && focused}>
+                {selectedIdx === 3 && focused ? "→ " : "  "}Stay Awake:
+              </Text>
+            </Box>
+            <Box marginLeft={2}>
+              <Text color={(config.preventSleep ?? true) ? theme.colors.good : theme.colors.alt} bold>
+                {(config.preventSleep ?? true) ? "[Enabled (Keep PC Awake)]" : "[Disabled (Allow Sleep)]"}
+              </Text>
+            </Box>
+          </Box>
+
+          {/* Item 4: On Complete */}
+          <Box justifyContent="space-between" alignItems="center">
+            <Box>
+              <Text color={selectedIdx === 4 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 4 && focused}>
+                {selectedIdx === 4 && focused ? "→ " : "  "}On Queue Finish:
+              </Text>
+            </Box>
+            <Box marginLeft={2}>
+              <Text
+                color={
+                  config.onComplete === "sleep"
+                    ? theme.colors.accent
+                    : config.onComplete === "shutdown"
+                    ? theme.colors.bad
+                    : theme.colors.alt
+                }
+                bold
+              >
+                {config.onComplete === "sleep"
+                  ? "[Put PC to Sleep 🌙]"
+                  : config.onComplete === "shutdown"
+                  ? "[Shutdown PC ⚡]"
+                  : "[Stay On]"}
+              </Text>
+            </Box>
+          </Box>
+
           <Box marginTop={1}>
             <Text dimColor>
-              Press ↵ on Theme or Spinner to open list. Press ↵ on Folder to edit path.
+              Press ↵ to edit folder, pick theme/spinner, toggle stay awake, or cycle finish action.
             </Text>
           </Box>
         </Box>

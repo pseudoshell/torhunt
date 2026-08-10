@@ -148,6 +148,8 @@ export function makeTestStore(overrides: Partial<Store> = {}): Store {
       theme: "electric-cyan",
       spinner: "dots",
       trackers: [],
+      preventSleep: true,
+      onComplete: "none",
     } as Config,
     setConfig: noop,
     theme: DEFAULT_THEME,

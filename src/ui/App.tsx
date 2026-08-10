@@ -27,6 +27,12 @@ import { readClipboard, writeClipboard } from "../util/clipboard";
 import { openFolder } from "../util/openFolder";
 import { cleanText, formatBytes, truncate } from "../util/format";
 import {
+  acquireKeepAwake,
+  releaseKeepAwake,
+  triggerSleep,
+  triggerShutdown,
+} from "../util/power";
+import {
   StoreContext,
   type CaptureMode,
   type DownloadFocus,
@@ -227,14 +233,39 @@ export function App({
   }, []);
 
   useEffect(() => {
-    if (!queue) return;
-    const onCompleted = (name: string): void =>
-      setNotice(`${ICON.done} ${truncate(cleanText(name), 40)}`);
-    queue.on("completed", onCompleted);
-    return () => {
-      queue.off("completed", onCompleted);
+    if (!queue || !config) return;
+
+    const updatePowerState = () => {
+      const active = queue.activeCount > 0;
+      if (active && (config.preventSleep ?? true)) {
+        acquireKeepAwake();
+      } else {
+        releaseKeepAwake();
+      }
     };
-  }, [queue]);
+
+    updatePowerState();
+    queue.on("change", updatePowerState);
+
+    const onCompleted = (name: string): void => {
+      setNotice(`${ICON.done} ${truncate(cleanText(name), 40)}`);
+      if (queue.activeCount === 0 && queue.getItems().length === 0) {
+        releaseKeepAwake();
+        if (config.onComplete === "sleep") {
+          triggerSleep();
+        } else if (config.onComplete === "shutdown") {
+          triggerShutdown();
+        }
+      }
+    };
+    queue.on("completed", onCompleted);
+
+    return () => {
+      queue.off("change", updatePowerState);
+      queue.off("completed", onCompleted);
+      releaseKeepAwake();
+    };
+  }, [queue, config]);
 
   useEffect(
     () => () => {
