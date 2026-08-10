@@ -13,6 +13,7 @@ import { sortResults, nextSort, sortLabel, sortArrow, type Sort, type SortField 
 import { filterResults } from "../filter";
 import { COLOR, GUTTER, ICON, sourceStyle, type Theme } from "../theme";
 import { cleanText, formatBytes, formatCount, formatRelative, stripControl, truncate } from "../../util/format";
+import { ResultShimmer } from "./ResultShimmer";
 import type { Source, TorrentResult } from "../../sources/types";
 
 type Mode = "list" | "search" | "detail" | "filter";
@@ -447,14 +448,13 @@ export function Results() {
                         <Text color={here ? theme.colors.bright : theme.colors.rule} bold={here}>{index + 1}</Text>
                       </Box>
                       <Box flexGrow={1} minWidth={0} marginLeft={1}>
-                        <Text
-                          wrap="truncate-end"
-                          color={here ? theme.colors.bright : undefined}
-                          dimColor={!here}
-                          bold={here}
-                        >
-                          {cleanText(r.name)}
-                        </Text>
+                        {here ? (
+                          <ResultShimmer text={cleanText(r.name)} theme={theme} />
+                        ) : (
+                          <Text wrap="truncate-end" dimColor>
+                            {cleanText(r.name)}
+                          </Text>
+                        )}
                       </Box>
                       {showStats ? (
                         <>
