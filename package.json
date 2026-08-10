@@ -48,11 +48,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/baairon/torlink.git"
+    "url": "git+https://github.com/pseudoshell/torhunt.git"
   },
-  "homepage": "https://torlink.bairon.dev",
+  "homepage": "https://github.com/pseudoshell/torhunt",
   "bugs": {
-    "url": "https://github.com/baairon/torlink/issues"
+    "url": "https://github.com/pseudoshell/torhunt/issues"
   },
   "publishConfig": {
     "access": "public"
