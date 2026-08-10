@@ -11,25 +11,24 @@ export function ResultShimmer({ text, theme }: ResultShimmerProps) {
   const [beamIdx, setBeamIdx] = useState(-5);
 
   useEffect(() => {
-    // Reset beam to start when text changes
     setBeamIdx(-5);
   }, [text]);
 
   useEffect(() => {
-    // Total steps = text length + beam padding + pause frames (~2.5s pause)
-    const totalSteps = text.length + 50;
+    // Total steps = text length + beam padding + short pause frames
+    const totalSteps = text.length + 20;
 
     const timer = setInterval(() => {
       setBeamIdx((prev) => {
         const next = prev + 1;
         return next > totalSteps ? -5 : next;
       });
-    }, 45);
+    }, 25);
 
     return () => clearInterval(timer);
   }, [text]);
 
-  const beamWidth = 5;
+  const beamWidth = 6;
   const peakColor = theme.colors.sheenPeak || "#ffffff";
   const mainColor = theme.colors.accent;
 
