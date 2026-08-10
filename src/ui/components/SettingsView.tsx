@@ -25,6 +25,7 @@ export function SettingsView() {
     listRows,
     setNotice,
     setCaptureMode,
+    updateVersion,
   } = useStore();
 
   const focused = region === "content";
@@ -143,7 +144,15 @@ export function SettingsView() {
         </Box>
 
         {/* Anchored to the bottom-right inside the Settings panel */}
-        <Box justifyContent="flex-end">
+        <Box justifyContent="flex-end" alignItems="center">
+          {updateVersion ? (
+            <Box marginRight={1}>
+              <Text color={theme.colors.accent} bold>
+                {`↑ v${updateVersion} available (run torhunt update)`}
+              </Text>
+              <Text color={theme.colors.rule}>{"  │  "}</Text>
+            </Box>
+          ) : null}
           <Text color={theme.colors.alt} dimColor>
             {`v${VERSION}`}
           </Text>

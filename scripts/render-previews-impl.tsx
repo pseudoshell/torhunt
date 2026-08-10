@@ -128,6 +128,7 @@ function makeStore(
     addBookmark: noop,
     removeBookmark: noop,
     clearBookmarks: noop,
+    updateVersion: null,
     quitAll: noop,
     listRows: 14,
     compact: false,

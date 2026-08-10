@@ -21,4 +21,20 @@ describe("SettingsView", () => {
     expect(ui.frame()).toContain("v1.");
     ui.unmount();
   });
+
+  it("renders update notice when updateVersion is set", () => {
+    const store = makeTestStore({
+      queue: fakeQueue([], []),
+      section: "settings",
+      updateVersion: "9.9.9",
+    });
+    const ui = renderUI(
+      <StoreContext.Provider value={store}>
+        <SettingsView />
+      </StoreContext.Provider>,
+    );
+
+    expect(ui.frame()).toContain("↑ v9.9.9 available (run torhunt update)");
+    ui.unmount();
+  });
 });

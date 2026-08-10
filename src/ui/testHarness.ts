@@ -189,6 +189,7 @@ export function makeTestStore(overrides: Partial<Store> = {}): Store {
     addBookmark: noop,
     removeBookmark: noop,
     clearBookmarks: noop,
+    updateVersion: null,
     quitAll: noop,
     listRows: 14,
     compact: false,
