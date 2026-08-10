@@ -12,6 +12,7 @@ export function SettingsView() {
   const {
     config,
     setConfig,
+    queue,
     theme,
     setThemeId,
     spinner,
@@ -74,6 +75,7 @@ export function SettingsView() {
     const nextCfg = { ...config, downloadDir: normalized };
     setConfig(nextCfg);
     saveConfig(nextCfg);
+    queue.updateDefaultDir(normalized);
     setNotice(`Saved download folder: ${normalized}`);
   };
 

@@ -17,6 +17,7 @@ import { deleteSeedData } from "./delete-data";
 import { disarmBootMarker } from "./bootguard";
 import type { QueueItem, SeedItem } from "./types";
 import type { SourceId } from "../sources/types";
+import { normalizeDownloadDir } from "../config/folder";
 
 /**
  * A real seed never pulls data off the network: verifying on-disk files reads
@@ -159,6 +160,9 @@ export class DownloadQueue extends EventEmitter {
 
   private startEngine(item: QueueItem): void {
     try {
+      if (/^[a-zA-Z]:[\\/]?$/.test(item.dir.trim())) {
+        item.dir = normalizeDownloadDir(item.dir);
+      }
       this.engine.add(item.id, item.magnet, item.dir, this.engineHandlers(item.id), this.trackers);
     } catch (e) {
       // engine.add routes webtorrent's own synchronous failures through
@@ -523,9 +527,24 @@ export class DownloadQueue extends EventEmitter {
     void this.persist();
   }
 
-  retryFailed(): void {
+  updateDefaultDir(newDir: string): void {
+    const sanitized = normalizeDownloadDir(newDir);
+    if (!sanitized) return;
     for (const it of [...this.items.values()]) {
-      if (it.status === "failed") this.retry(it.id);
+      if (it.status === "failed") {
+        it.dir = sanitized;
+        this.retry(it.id);
+      }
+    }
+  }
+
+  retryFailed(newDir?: string): void {
+    const sanitized = newDir ? normalizeDownloadDir(newDir) : undefined;
+    for (const it of [...this.items.values()]) {
+      if (it.status === "failed") {
+        if (sanitized) it.dir = sanitized;
+        this.retry(it.id);
+      }
     }
   }
 
