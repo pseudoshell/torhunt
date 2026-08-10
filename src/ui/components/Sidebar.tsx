@@ -29,6 +29,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { key: "downloads", label: "Downloads" },
       { key: "seeding", label: "Seeding" },
+      { key: "completed", label: "Completed" },
     ],
   },
   {

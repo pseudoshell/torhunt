@@ -39,6 +39,7 @@ import { HelpOverlay } from "./components/HelpOverlay";
 import { Results } from "./components/Results";
 import { Downloads } from "./components/Downloads";
 import { Seeding } from "./components/Seeding";
+import { CompletedView } from "./components/CompletedView";
 import { SettingsView } from "./components/SettingsView";
 import { Spinner } from "./components/Spinner";
 import { TabTitle } from "./components/TabTitle";
@@ -780,6 +781,8 @@ export function App({
               <Downloads />
             ) : section === "seeding" ? (
               <Seeding />
+            ) : section === "completed" ? (
+              <CompletedView />
             ) : section === "settings" ? (
               <SettingsView />
             ) : (

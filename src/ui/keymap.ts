@@ -104,6 +104,16 @@ export function footerHints(
       seedFocus === "seeding" ? "Pause" : seedFocus === "missing" ? "Retry" : "Resume";
     return [{ keys: "p", label }, { keys: "c", label: "Remove from list" }, FOLDER, SWITCH, ALWAYS];
   }
+  if (section === "completed") {
+    return [
+      NAVIGATE,
+      { keys: "↵/e", label: "Open Folder" },
+      { keys: "d", label: "Redownload" },
+      { keys: "c", label: "Remove" },
+      SWITCH,
+      ALWAYS,
+    ];
+  }
   if (section === "downloads") {
     if (downloadFocus === "paused") {
       return [{ keys: "p", label: "Resume" }, { keys: "c", label: "Cancel" }, FOLDER, TORRENT, SWITCH, ALWAYS];
