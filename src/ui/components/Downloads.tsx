@@ -109,12 +109,20 @@ export function Downloads() {
             sizeBytes: h.sizeBytes,
           });
         else if (input === "c") queue.removeHistory(h.id);
-        // Clear-all lives here, not at the top of the chain, so it can only
-        // fire while the cursor is actually on the recent list.
         else if (input === "C") queue.clearHistory();
       }
     },
     { isActive: focused && total > 0 },
+  );
+
+  useInput(
+    (input) => {
+      const first = active[0];
+      if (!first) return;
+      if (input === "p") queue.togglePause(first.id);
+      else if (input === "c") queue.cancel(first.id);
+    },
+    { isActive: !focused && region === "sidebar" && active.length > 0 },
   );
 
   let focusKind: DownloadFocus | null = null;

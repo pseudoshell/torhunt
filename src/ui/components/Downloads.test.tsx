@@ -110,7 +110,7 @@ describe("Downloads clear/remove keys", () => {
     u.press("j");
     await vi.waitFor(() => expect(lineWith(u, "ubuntu 24.04")).toContain("→"));
 
-    u.press("x");
+    u.press("z");
     await tick();
     u.press("j");
     await vi.waitFor(() => expect(lineWith(u, "debian 12")).toContain("→"));

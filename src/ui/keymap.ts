@@ -81,6 +81,16 @@ export function footerHints(
   resultFocus?: ResultFocus | null,
 ): Hint[] {
   if (region === "sidebar") {
+    if (section === "downloads") {
+      return [
+        NAVIGATE,
+        { keys: "↵", label: "Focus" },
+        { keys: "p", label: "Pause" },
+        { keys: "c", label: "Stop" },
+        SWITCH,
+        ALWAYS,
+      ];
+    }
     return [
       NAVIGATE,
       { keys: "↵", label: "Open" },
