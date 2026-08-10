@@ -6,21 +6,47 @@ interface ShimmerTextProps {
   text: string;
   theme: Theme;
   bold?: boolean;
+  dwellDelayMs?: number;
 }
 
-export function ShimmerText({ text, theme, bold = true }: ShimmerTextProps) {
+export function ShimmerText({
+  text,
+  theme,
+  bold = true,
+  dwellDelayMs = 350,
+}: ShimmerTextProps) {
+  const [shimmering, setShimmering] = useState(false);
   const [frame, setFrame] = useState(0);
 
+  // Dwell timer: wait dwellDelayMs of remaining on the item before starting shimmer
   useEffect(() => {
+    setShimmering(false);
+    setFrame(0);
+    const dwellTimer = setTimeout(() => {
+      setShimmering(true);
+    }, dwellDelayMs);
+    return () => clearTimeout(dwellTimer);
+  }, [text, dwellDelayMs]);
+
+  // Frame timer: animates shimmer beam only after dwell threshold is reached
+  useEffect(() => {
+    if (!shimmering) return;
     const timer = setInterval(() => {
       setFrame((f) => f + 1);
     }, 60);
     return () => clearInterval(timer);
-  }, []);
+  }, [shimmering]);
 
-  // Total cycle = 60 frames (~3.6s at 60ms per frame)
-  // Active sweep: frames 0..24 (1.4s smooth sweep across text)
-  // Rest delay:   frames 24..60 (2.2s pause in theme bright)
+  if (!shimmering) {
+    // While moving / exploring: clean steady bright text without shimmering
+    return (
+      <Text color={theme.colors.bright} bold={bold} wrap="truncate-end">
+        {text}
+      </Text>
+    );
+  }
+
+  // Active shimmer sweep after cursor rests on item
   const cycleFrame = frame % 60;
   const chars = [...text];
   const total = Math.max(1, chars.length - 1);
