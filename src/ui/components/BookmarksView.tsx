@@ -34,7 +34,7 @@ export function BookmarksView() {
     (input, key) => {
       if (key.upArrow || input === "k") setCursor(wrapStep(clamped, -1, total));
       else if (key.downArrow || input === "j") setCursor(wrapStep(clamped, 1, total));
-      else if (input === "d") {
+      else if (key.return || input === "d") {
         const b = bookmarks[clamped];
         if (b) {
           startDownload({

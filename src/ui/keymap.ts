@@ -63,7 +63,7 @@ export const HELP_GROUPS: HelpGroup[] = [
   {
     title: "Bookmarks",
     hints: [
-      { keys: "d", label: "Download (shift+d: folder)" },
+      { keys: "↵ / d", label: "Download (shift+d: folder)" },
       { keys: "b / c", label: "Remove bookmark" },
       { keys: "y", label: "Copy magnet" },
       { keys: "C", label: "Clear all" },
@@ -117,7 +117,7 @@ export function footerHints(
   if (section === "bookmarks") {
     return [
       NAVIGATE,
-      { keys: "d", label: "Download" },
+      { keys: "↵/d", label: "Download" },
       { keys: "b", label: "Remove" },
       { keys: "y", label: "Copy" },
       SWITCH,
