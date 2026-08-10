@@ -32,7 +32,6 @@ export function Splash({
       justifyContent="center"
       alignItems="center"
     >
-      <UpdateBanner latest={updateVersion ?? null} />
       {recovered ? (
         <Text dimColor>{`↻ recovered from a crashed start · downloads paused`}</Text>
       ) : null}
@@ -67,6 +66,12 @@ export function Splash({
           <Text dimColor> quit</Text>
         </Text>
       </Box>
+
+      {updateVersion ? (
+        <Box marginTop={1}>
+          <UpdateBanner latest={updateVersion} />
+        </Box>
+      ) : null}
     </Box>
   );
 }
