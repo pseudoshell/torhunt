@@ -31,6 +31,12 @@ const GROUPS: NavGroup[] = [
       { key: "seeding", label: "Seeding" },
     ],
   },
+  {
+    title: "CONFIG",
+    items: [
+      { key: "settings", label: "Settings" },
+    ],
+  },
 ];
 
 const NAV: NavItem[] = GROUPS.flatMap((g) => g.items);

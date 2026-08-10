@@ -9,7 +9,7 @@ export type View = "splash" | "browser";
 
 export type Category = "all" | "games" | "movies" | "tv" | "anime";
 
-export type Section = Category | "downloads" | "seeding";
+export type Section = Category | "downloads" | "seeding" | "settings";
 
 export const CATEGORIES: { key: Category; label: string; group?: SourceGroup }[] = [
   { key: "all", label: "All" },
