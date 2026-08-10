@@ -1,9 +1,9 @@
-const SPARK_CHARS = [" ", " ", "▂", "▃", "▄", "▅", "▆", "▇"];
+const SPARK_CHARS = [" ", "⡀", "⣀", "⣠", "⣤", "⣴", "⣾", "⣿"];
 
 /**
- * Generates a sparkline string from an array of numbers.
- * Uses capped 7/8th height bars ("▇") to ensure a clean top margin
- * so full-speed bars never merge into a solid block wall.
+ * Generates a braille micro-waveform sparkline string from an array of numbers.
+ * Uses high-resolution braille dot matrices for smooth speed contours that
+ * remain distinct even at max download speed.
  */
 export function sparkline(values: number[], targetLength?: number): string {
   if (!values || values.length === 0) {
