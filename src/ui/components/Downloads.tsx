@@ -3,6 +3,7 @@ import { Box, Text, useInput } from "ink";
 import { useStore, useQueueItems, useQueueHistory, type DownloadFocus } from "../store";
 import { Panel } from "./Panel";
 import { ProgressBar } from "./ProgressBar";
+import { ShimmerText } from "./ShimmerText";
 import { wrapStep, windowStart } from "../move";
 import { COLOR, GUTTER, ICON, sourceStyle } from "../theme";
 import {
@@ -193,14 +194,13 @@ export function Downloads() {
                 <Text color={sc}>{statusIcon(it.status)}</Text>
               </Box>
               <Box flexGrow={1} minWidth={0}>
-                <Text
-                  wrap="truncate-end"
-                  bold={here}
-                  color={here ? theme.colors.bright : undefined}
-                  dimColor={!here}
-                >
-                  {cleanText(it.name)}
-                </Text>
+                {here ? (
+                  <ShimmerText text={cleanText(it.name)} theme={theme} />
+                ) : (
+                  <Text wrap="truncate-end" dimColor>
+                    {cleanText(it.name)}
+                  </Text>
+                )}
               </Box>
               <Box width={10} flexShrink={0} marginLeft={1} justifyContent="flex-end">
                 <Text
