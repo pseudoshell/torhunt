@@ -145,7 +145,7 @@ export function SettingsView() {
         {/* Anchored to the bottom-right inside the Settings panel */}
         <Box justifyContent="flex-end">
           <Text color={theme.colors.alt} dimColor>
-            {`torhunt v${VERSION}`}
+            {`v${VERSION}`}
           </Text>
         </Box>
       </Box>

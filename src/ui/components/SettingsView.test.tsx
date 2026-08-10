@@ -18,7 +18,7 @@ describe("SettingsView", () => {
     expect(ui.frame()).toContain("Download Folder:");
     expect(ui.frame()).toContain("Color Theme:");
     expect(ui.frame()).toContain("Spinner Style:");
-    expect(ui.frame()).toContain("torhunt v");
+    expect(ui.frame()).toContain("v1.");
     ui.unmount();
   });
 });
