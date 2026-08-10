@@ -6,7 +6,7 @@
 
 import { spawnSync } from "node:child_process";
 
-export const SESSION = "torlink";
+export const SESSION = "torhunt";
 
 function shQuote(s: string): string {
   return `'${s.replace(/'/g, `'\\''`)}'`;

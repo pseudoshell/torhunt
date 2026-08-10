@@ -4,5 +4,5 @@ import { Text } from "ink";
 // design: it never steals focus or a key, it just points at `torlnk update`.
 export function UpdateBanner({ latest }: { latest: string | null }) {
   if (!latest) return null;
-  return <Text dimColor>{`↑ torlink v${latest} available · torlnk update`}</Text>;
+  return <Text dimColor>{`↑ torhunt v${latest} available · torhunt update`}</Text>;
 }

@@ -40,7 +40,7 @@ export function Splash({
         <Logo theme={theme} />
       ) : (
         <Text bold color={theme.colors.accent}>
-          torlink
+          torhunt
         </Text>
       )}
 

@@ -11,6 +11,6 @@ describe("tuiCommand", () => {
     expect(tuiCommand("/us'r/node", "/a b/x.js")).toBe("'/us'\\''r/node' '/a b/x.js'");
   });
   it("names one stable session", () => {
-    expect(SESSION).toBe("torlink");
+    expect(SESSION).toBe("torhunt");
   });
 });
