@@ -16,5 +16,10 @@ export function expandHome(input: string, home: string = os.homedir()): string {
 export function normalizeDownloadDir(input: string, home: string = os.homedir()): string {
   const expanded = expandHome(input, home);
   if (!expanded) return "";
+  const trimmed = expanded.trim();
+  if (/^[a-zA-Z]:[\\/]?$/.test(trimmed)) {
+    const drive = trimmed[0]!.toUpperCase();
+    return path.normalize(`${drive}:\\Downloads`);
+  }
   return path.normalize(expanded);
 }

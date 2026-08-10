@@ -37,4 +37,9 @@ describe("normalizeDownloadDir", () => {
       path.normalize(path.join(HOME, "Downloads", "torlink")),
     );
   });
+
+  it("appends Downloads to a bare Windows drive root to prevent EPERM errors", () => {
+    expect(normalizeDownloadDir("Z:\\", HOME)).toBe(path.normalize("Z:\\Downloads"));
+    expect(normalizeDownloadDir("Z:", HOME)).toBe(path.normalize("Z:\\Downloads"));
+  });
 });
