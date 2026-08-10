@@ -92,6 +92,8 @@ export interface Store {
   openThemePicker: () => void;
   openSpinnerPicker: () => void;
   openFolderPicker: () => void;
+  searchModeTrigger: number;
+  triggerSearch: () => void;
 
   quitAll: () => void;
 

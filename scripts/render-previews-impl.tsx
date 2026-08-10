@@ -122,6 +122,8 @@ function makeStore(
     openThemePicker: noop,
     openSpinnerPicker: noop,
     openFolderPicker: noop,
+    searchModeTrigger: 0,
+    triggerSearch: noop,
     quitAll: noop,
     listRows: 14,
     compact: false,

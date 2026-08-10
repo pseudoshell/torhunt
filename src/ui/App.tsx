@@ -107,6 +107,16 @@ export function App({
   const [previewThemeId, setPreviewThemeId] = useState<string | null>(null);
   const [editingSpinner, setEditingSpinner] = useState(false);
   const [previewSpinnerId, setPreviewSpinnerId] = useState<string | null>(null);
+  const [searchModeTrigger, setSearchModeTrigger] = useState(0);
+
+  const triggerSearch = useCallback(() => {
+    setShowHelp(false);
+    if (section === "downloads" || section === "seeding" || section === "completed" || section === "settings") {
+      setSection("all");
+    }
+    setRegion("content");
+    setSearchModeTrigger((t) => t + 1);
+  }, [section]);
   // A result waiting on the "download to" prompt (D); null when the prompt is
   // closed. lastDownloadToDir pre-fills the next prompt so queueing a batch
   // into the same alternate folder only costs one typed path per session.
@@ -536,6 +546,8 @@ export function App({
       openThemePicker: () => setEditingTheme(true),
       openSpinnerPicker: () => setEditingSpinner(true),
       openFolderPicker: () => setEditingFolder(true),
+      searchModeTrigger,
+      triggerSearch,
       quitAll,
       listRows,
       compact,
@@ -596,6 +608,10 @@ export function App({
       }
       if (input === "?") {
         setShowHelp(true);
+        return;
+      }
+      if (input === "/") {
+        triggerSearch();
         return;
       }
       if (input === "o") {

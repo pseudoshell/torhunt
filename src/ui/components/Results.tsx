@@ -133,6 +133,7 @@ export function Results() {
     contentWidth,
     listRows,
     theme,
+    searchModeTrigger,
   } = useStore();
 
   const search = useConcurrentSearch(query);
@@ -152,10 +153,16 @@ export function Results() {
   const focused = region === "content";
   const [mode, setMode] = useState<Mode>("list");
   const [cursor, setCursor] = useState(0);
-  // The row the user navigated to, by infohash; null until they move. Keeps
-  // the cursor on their row while streamed-in sources reshuffle the list.
   const selRef = useRef<string | null>(null);
   const [detail, setDetail] = useState<TorrentResult | null>(null);
+
+  const lastTriggerRef = useRef(searchModeTrigger);
+  useEffect(() => {
+    if (searchModeTrigger !== lastTriggerRef.current) {
+      lastTriggerRef.current = searchModeTrigger;
+      setMode("search");
+    }
+  }, [searchModeTrigger]);
 
   useEffect(() => {
     setCursor((c) => stickCursor(results, selRef.current, c));
