@@ -1,6 +1,11 @@
 import { useContext, useEffect, useState } from "react";
 import { Box, Text } from "ink";
-import { LOGO_LINES, WORDMARK_LINES, SPROUT_CELLS } from "../logo";
+import {
+  LOGO_LINES,
+  INLINE_LOGO_LINES,
+  STACKED_ANCHOR_CELLS,
+  INLINE_ANCHOR_CELLS,
+} from "../logo";
 import { DEFAULT_THEME, lerpHex, type Theme } from "../theme";
 import { StoreContext } from "../store";
 
@@ -62,53 +67,16 @@ export function Logo({
     return () => clearInterval(timer);
   }, [animated]);
 
-  if (layout === "inline") {
-    const cycleFrame = frame % 90;
-    let anchorColor = theme.colors.sprout;
-    if (cycleFrame <= 36) {
-      const sweepT = cycleFrame / 36;
-      if (sweepT < 0.3) {
-        anchorColor = theme.colors.bright;
-      }
-    }
-
-    return (
-      <Box alignItems="center">
-        <Box marginRight={1}>
-          <Text color={anchorColor}>⚓</Text>
-        </Box>
-        <Box flexDirection="column">
-          {WORDMARK_LINES.map((line, row) => {
-            const tY = row / Math.max(1, WORDMARK_LINES.length - 1);
-            const chars = [...line];
-            const last = Math.max(1, chars.length - 1);
-            return (
-              <Box key={row}>
-                {chars.map((ch, i) => {
-                  if (ch === " ") return <Text key={i}> </Text>;
-                  const tX = i / last;
-                  return (
-                    <Text key={i} bold color={getSheen(tX, tY, theme, frame)}>
-                      {ch}
-                    </Text>
-                  );
-                })}
-              </Box>
-            );
-          })}
-        </Box>
-      </Box>
-    );
-  }
-
-  const rows = LOGO_LINES.length;
+  const lines = layout === "inline" ? INLINE_LOGO_LINES : LOGO_LINES;
+  const anchorCells = layout === "inline" ? INLINE_ANCHOR_CELLS : STACKED_ANCHOR_CELLS;
+  const rows = lines.length;
 
   return (
     <Box flexDirection="column">
-      {LOGO_LINES.map((line, row) => {
-        const textRow = Math.max(0, row - 1);
-        const textRows = Math.max(1, rows - 1);
-        const tY = textRow / (textRows - 1 || 1);
+      {lines.map((line, row) => {
+        const textRow = layout === "stacked" ? Math.max(0, row - 3) : row;
+        const textRows = layout === "stacked" ? 2 : rows;
+        const tY = textRow / Math.max(1, textRows - 1);
         const chars = [...line];
         const last = Math.max(1, chars.length - 1);
 
@@ -118,7 +86,7 @@ export function Logo({
               if (ch === " ") return <Text key={i}> </Text>;
 
               const tX = i / last;
-              const isAnchor = SPROUT_CELLS.has(`${row},${i}`);
+              const isAnchor = anchorCells.has(`${row},${i}`);
 
               if (isAnchor) {
                 const cycleFrame = frame % 90;
@@ -133,7 +101,7 @@ export function Logo({
                   }
                 }
                 return (
-                  <Text key={i} color={anchorColor}>
+                  <Text key={i} bold color={anchorColor}>
                     {ch}
                   </Text>
                 );
