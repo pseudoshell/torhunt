@@ -520,7 +520,7 @@ export const ICON = {
   down: "↓",
   up: "↑",
   peer: "•",
-  pause: "⏸",
+  pause: "||",
 } as const;
 
 export const GUTTER = 2;
