@@ -101,6 +101,10 @@ export interface Store {
   removeBookmark: (id: string) => void;
   clearBookmarks: () => void;
 
+  searchHistory: string[];
+  pushSearchHistory: (query: string) => void;
+  clearSearchHistory: () => void;
+
   updateVersion: string | null;
 
   quitAll: () => void;

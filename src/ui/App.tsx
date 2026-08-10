@@ -7,6 +7,12 @@ import { DownloadQueue } from "../download/queue";
 import { loadQueue, loadSeeds } from "../download/persist";
 import { loadHistory } from "../download/history";
 import { loadBookmarks, saveBookmarks, type BookmarkItem } from "../download/bookmarks";
+import {
+  addSearchQuery,
+  loadSearchHistory,
+  saveSearchHistory,
+  clearSearchHistory,
+} from "../sources/searchHistory";
 import { reconcileQueue } from "../download/reconcile";
 import {
   BOOT_SETTLE_MS,
@@ -111,6 +117,7 @@ export function App({
   const [previewSpinnerId, setPreviewSpinnerId] = useState<string | null>(null);
   const [searchModeTrigger, setSearchModeTrigger] = useState(0);
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
   const triggerSearch = useCallback(() => {
     setShowHelp(false);
@@ -165,7 +172,11 @@ export function App({
         q.restoreHistory(await loadHistory());
         q.restoreSeeds(await loadSeeds(), { safe: safeBoot });
         const loadedBookmarks = await loadBookmarks();
-        if (alive) setBookmarks(loadedBookmarks);
+        const loadedSearchHistory = await loadSearchHistory();
+        if (alive) {
+          setBookmarks(loadedBookmarks);
+          setSearchHistory(loadedSearchHistory);
+        }
       } catch (e) {
         logCrash("boot-restore", e);
       }
@@ -500,6 +511,19 @@ export function App({
     setNotice("All bookmarks cleared");
   }, []);
 
+  const pushSearchHistory = useCallback((q: string) => {
+    setSearchHistory((prev) => {
+      const next = addSearchQuery(prev, q);
+      void saveSearchHistory(next);
+      return next;
+    });
+  }, []);
+
+  const clearSearchHistoryCallback = useCallback(() => {
+    setSearchHistory([]);
+    void clearSearchHistory();
+  }, []);
+
   const submitQuery = useCallback(
     (raw: string) => {
       const q = raw.trim();
@@ -514,13 +538,14 @@ export function App({
           setView("browser");
           return;
         }
+        pushSearchHistory(q);
       }
       setQuery(q);
       setView("browser");
       if (section === "downloads") setSection("all");
       setRegion("content");
     },
-    [section, startDownload],
+    [section, startDownload, pushSearchHistory],
   );
 
   const pasteFromClipboard = useCallback(async () => {
@@ -610,6 +635,9 @@ export function App({
       addBookmark,
       removeBookmark,
       clearBookmarks,
+      searchHistory,
+      pushSearchHistory,
+      clearSearchHistory: clearSearchHistoryCallback,
       updateVersion,
       quitAll,
       listRows,
@@ -653,6 +681,9 @@ export function App({
     addBookmark,
     removeBookmark,
     clearBookmarks,
+    searchHistory,
+    pushSearchHistory,
+    clearSearchHistoryCallback,
     updateVersion,
     quitAll,
     listRows,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Text, useInput } from "ink";
 
 export interface TextFieldProps {
@@ -6,6 +6,7 @@ export interface TextFieldProps {
   defaultValue?: string;
   placeholder?: string;
   width?: number;
+  history?: string[];
   onChange?: (value: string) => void;
   onSubmit?: (value: string) => void;
   onExitDown?: () => void;
@@ -76,6 +77,7 @@ export function TextField({
   defaultValue = "",
   placeholder = "",
   width,
+  history,
   onChange,
   onSubmit,
   onExitDown,
@@ -83,8 +85,11 @@ export function TextField({
 }: TextFieldProps) {
   const [value, setValue] = useState(defaultValue);
   const [cursor, setCursor] = useState(defaultValue.length);
+  const [historyIdx, setHistoryIdx] = useState(-1);
+  const draftRef = useRef(defaultValue);
 
   function apply(next: Edit): void {
+    setHistoryIdx(-1);
     setValue(next.value);
     setCursor(Math.max(0, Math.min(next.value.length, next.cursor)));
     if (next.value !== value) onChange?.(next.value);
@@ -92,11 +97,51 @@ export function TextField({
 
   useInput(
     (input, key) => {
-      if (key.downArrow || key.tab) {
+      if (key.upArrow) {
+        if (history && history.length > 0) {
+          const nextIdx = historyIdx === -1 ? 0 : Math.min(history.length - 1, historyIdx + 1);
+          if (historyIdx === -1) {
+            draftRef.current = value;
+          }
+          const item = history[nextIdx];
+          if (item !== undefined) {
+            setHistoryIdx(nextIdx);
+            setValue(item);
+            setCursor(item.length);
+            onChange?.(item);
+          }
+        }
+        return;
+      }
+
+      if (key.downArrow) {
+        if (history && history.length > 0 && historyIdx >= 0) {
+          if (historyIdx === 0) {
+            setHistoryIdx(-1);
+            setValue(draftRef.current);
+            setCursor(draftRef.current.length);
+            onChange?.(draftRef.current);
+            return;
+          }
+          const nextIdx = historyIdx - 1;
+          const item = history[nextIdx];
+          if (item !== undefined) {
+            setHistoryIdx(nextIdx);
+            setValue(item);
+            setCursor(item.length);
+            onChange?.(item);
+            return;
+          }
+        }
         onExitDown?.();
         return;
       }
-      if (key.upArrow || (key.ctrl && input === "c")) return;
+
+      if (key.tab) {
+        onExitDown?.();
+        return;
+      }
+      if (key.ctrl && input === "c") return;
 
       if (key.return) {
         onSubmit?.(value);
