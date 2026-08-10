@@ -134,6 +134,14 @@ export function footerHints(
       ALWAYS,
     ];
   }
+  if (section === "settings") {
+    return [
+      NAVIGATE,
+      { keys: "↵", label: "Configure" },
+      SWITCH,
+      ALWAYS,
+    ];
+  }
   if (section === "downloads") {
     if (downloadFocus === "paused") {
       return [{ keys: "p", label: "Resume" }, { keys: "c", label: "Cancel" }, FOLDER, TORRENT, SWITCH, ALWAYS];

@@ -7,6 +7,7 @@ import { THEMES } from "../theme";
 import { SPINNERS } from "../spinnerPresets";
 import { saveConfig } from "../../config/config";
 import { normalizeDownloadDir } from "../../config/folder";
+import { VERSION } from "../../version";
 
 export function SettingsView() {
   const {
@@ -133,10 +134,17 @@ export function SettingsView() {
           </Box>
         </Box>
 
-        <Box marginTop={1}>
-          <Text dimColor>
-            Press ↵ on Color Theme or Spinner Style to open full interactive list. Press ↵ on Download Folder to edit path.
-          </Text>
+        <Box marginTop={1} justifyContent="space-between" alignItems="center">
+          <Box flexGrow={1} minWidth={0}>
+            <Text dimColor>
+              Press ↵ on Theme or Spinner to open list. Press ↵ on Folder to edit.
+            </Text>
+          </Box>
+          <Box flexShrink={0} marginLeft={2}>
+            <Text color={theme.colors.alt} dimColor bold>
+              {`torhunt v${VERSION}`}
+            </Text>
+          </Box>
         </Box>
       </Box>
     </Panel>
