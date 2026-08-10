@@ -219,7 +219,7 @@ export function SettingsView() {
           {updateVersion ? (
             <Box marginRight={1}>
               <Text color={theme.colors.accent} bold>
-                {`↑ v${updateVersion} available (run torhunt update)`}
+                {`↑ v${updateVersion} available [run torhunt update]`}
               </Text>
               <Text color={theme.colors.rule}>{"  │  "}</Text>
             </Box>

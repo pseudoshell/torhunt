@@ -36,7 +36,7 @@ describe("SettingsView", () => {
       </StoreContext.Provider>,
     );
 
-    expect(ui.frame()).toContain("↑ v9.9.9 available (run torhunt update)");
+    expect(ui.frame()).toContain("↑ v9.9.9 available [run torhunt update]");
     ui.unmount();
   });
 });
