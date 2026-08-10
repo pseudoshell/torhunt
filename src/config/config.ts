@@ -13,7 +13,7 @@ export const defaultConfig: Config = {
   downloadDir: defaultDownloadDir,
   trackers: [],
   theme: "electric-cyan",
-  spinner: "dots",
+  spinner: "meter",
 };
 
 export async function loadConfig(): Promise<Config> {
