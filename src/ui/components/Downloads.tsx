@@ -1,22 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import { useStore, useQueueItems, useQueueHistory, type DownloadFocus } from "../store";
+import { useStore, useQueueItems, type DownloadFocus } from "../store";
 import { Panel } from "./Panel";
 import { ProgressBar } from "./ProgressBar";
 import { wrapStep, windowStart } from "../move";
-import { COLOR, GUTTER, ICON, sourceStyle } from "../theme";
+import { GUTTER, ICON, sourceStyle } from "../theme";
 import {
   cleanText,
   formatBytes,
   formatBytesPerSec,
   formatEtaShort,
-  formatRelative,
   truncate,
 } from "../../util/format";
 import type { QueueItem } from "../../download/types";
-import type { HistoryItem } from "../../download/history";
-
 import type { Theme } from "../theme";
+import { sparkline } from "../../util/sparkline";
 
 const ROWS_PER_ACTIVE = 2;
 const MARK = 2;
@@ -33,8 +31,6 @@ function statusIcon(status: QueueItem["status"]): string {
   if (status === "queued") return ICON.pending;
   return ICON.down;
 }
-
-import { sparkline } from "../../util/sparkline";
 
 function rightStats(it: QueueItem, speedHistory?: number[]): string {
   if (it.status === "downloading") {
@@ -54,14 +50,12 @@ export function Downloads() {
     region,
     contentWidth,
     listRows,
-    startDownload,
     openDownloadFolder,
     setDownloadFocus,
     exportTorrent,
     theme,
   } = useStore();
   const active = useQueueItems(queue);
-  const recent = useQueueHistory(queue);
   const focused = region === "content";
 
   const speedMapRef = useRef<Map<string, number[]>>(new Map());
@@ -75,11 +69,9 @@ export function Downloads() {
     }
   }, [active]);
 
-  const total = active.length + recent.length;
+  const total = active.length;
   const [cursor, setCursor] = useState(0);
   const clamped = Math.min(cursor, Math.max(0, total - 1));
-  const inActive = clamped < active.length;
-  const recentCursor = clamped - active.length;
 
   useInput(
     (input, key) => {
@@ -87,29 +79,16 @@ export function Downloads() {
       else if (key.downArrow || input === "j") setCursor(wrapStep(clamped, 1, total));
       else if (input === "f") queue.retryFailed();
       else if (input === "e") {
-        const dir = inActive ? active[clamped]?.dir : recent[recentCursor]?.dir;
-        if (dir) openDownloadFolder(dir);
+        const item = active[clamped];
+        if (item?.dir) openDownloadFolder(item.dir);
       } else if (input === "s") {
-        const item = inActive ? active[clamped] : recent[recentCursor];
+        const item = active[clamped];
         if (item) exportTorrent({ id: item.id, name: item.name });
-      } else if (inActive) {
+      } else {
         const it = active[clamped];
         if (!it) return;
         if (input === "c") queue.cancel(it.id);
         else if (input === "p") queue.togglePause(it.id);
-      } else {
-        const h = recent[recentCursor];
-        if (!h) return;
-        if (key.return || input === "d")
-          startDownload({
-            id: h.id,
-            name: h.name,
-            magnet: h.magnet,
-            source: h.source,
-            sizeBytes: h.sizeBytes,
-          });
-        else if (input === "c") queue.removeHistory(h.id);
-        else if (input === "C") queue.clearHistory();
       }
     },
     { isActive: focused && total > 0 },
@@ -127,11 +106,8 @@ export function Downloads() {
 
   let focusKind: DownloadFocus | null = null;
   if (focused && total > 0) {
-    if (!inActive) focusKind = "recent";
-    else {
-      const st = active[clamped]?.status;
-      if (st === "downloading" || st === "paused" || st === "failed") focusKind = st;
-    }
+    const st = active[clamped]?.status;
+    if (st === "downloading" || st === "paused" || st === "failed") focusKind = st;
   }
   useEffect(() => {
     setDownloadFocus(focusKind);
@@ -143,50 +119,25 @@ export function Downloads() {
   if (total === 0) {
     return (
       <Panel title="downloads" width={contentWidth} focused={focused} height={panelH}>
-        <Text dimColor>No downloads yet. Find something and press d to grab it.</Text>
+        <Text dimColor>Nothing downloading right now. Search for torrents or press / to start downloading.</Text>
       </Panel>
     );
   }
 
-  const hasActive = active.length > 0;
-  const hasRecent = recent.length > 0;
-  const headerRows = hasRecent ? 1 : 0;
   const ceiling = Math.max(1, panelH - 1);
-
-  let gapRows = hasActive && hasRecent ? 1 : 0;
-  let maxActive = 0;
-  let maxRecent = 0;
-  if (!hasRecent) {
-    maxActive = Math.max(1, Math.floor(ceiling / ROWS_PER_ACTIVE));
-  } else if (!hasActive) {
-    maxRecent = Math.max(1, ceiling - headerRows);
-  } else {
-    let budget = ceiling - headerRows - gapRows;
-    if (budget < ROWS_PER_ACTIVE + 1) {
-      gapRows = 0;
-      budget = ceiling - headerRows;
-    }
-    const activeRowCap = Math.max(ROWS_PER_ACTIVE, Math.floor(budget * 0.55));
-    maxActive = Math.min(active.length, Math.max(1, Math.floor(activeRowCap / ROWS_PER_ACTIVE)));
-    maxRecent = Math.max(1, budget - maxActive * ROWS_PER_ACTIVE);
-  }
-
-  const activeStart = windowStart(inActive ? clamped : 0, active.length, maxActive);
+  const maxActive = Math.min(active.length, Math.max(1, Math.floor(ceiling / ROWS_PER_ACTIVE)));
+  const activeStart = windowStart(clamped, active.length, maxActive);
   const activeVisible = active.slice(activeStart, activeStart + maxActive);
-  const recentStart = windowStart(inActive ? 0 : recentCursor, recent.length, maxRecent);
-  const recentVisible = recent.slice(recentStart, recentStart + maxRecent);
 
   const inner = contentWidth - 4;
   const gap = 2;
   const barW = Math.max(8, Math.min(28, Math.floor(inner * 0.4)));
   const statsW = Math.max(6, inner - MARK - GUTTER - barW - gap);
 
-  const count = hasActive ? `(${active.length})` : undefined;
-
   return (
-    <Panel title="downloads" width={contentWidth} focused={focused} count={count} height={panelH}>
+    <Panel title="downloads" width={contentWidth} focused={focused} count={`(${active.length})`} height={panelH}>
       {activeVisible.map((it, i) => {
-        const here = activeStart + i === clamped && focused && inActive;
+        const here = activeStart + i === clamped && focused;
         const sc = statusColor(it.status, theme);
         const ss = sourceStyle(it.source, theme);
         return (
@@ -211,10 +162,8 @@ export function Downloads() {
                 </Text>
               </Box>
               <Box width={10} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-                <Text
-                  dimColor={!here}
-                  bold={here}
-                >{it.totalBytes > 0 ? formatBytes(it.totalBytes) : "-"}
+                <Text dimColor={!here} bold={here}>
+                  {it.totalBytes > 0 ? formatBytes(it.totalBytes) : "-"}
                 </Text>
               </Box>
               <Box width={4} flexShrink={0} marginLeft={1} justifyContent="flex-end">
@@ -237,64 +186,6 @@ export function Downloads() {
               <Box marginLeft={gap} flexShrink={0}>
                 <Text dimColor>{truncate(rightStats(it, speedMapRef.current.get(it.id)), statsW)}</Text>
               </Box>
-            </Box>
-          </Box>
-        );
-      })}
-
-      {hasRecent ? (
-        <Box marginTop={gapRows ? 1 : 0}>
-          <Text dimColor>{`Recently downloaded${recent.length > 1 ? `  (${recent.length})` : ""}`}</Text>
-        </Box>
-      ) : null}
-
-      {recentVisible.map((h: HistoryItem, i) => {
-        const here = recentStart + i === recentCursor && focused && !inActive;
-        const ss = sourceStyle(h.source, theme);
-        const when = formatRelative(h.completedAt / 1000);
-        return (
-          <Box key={h.id}>
-            <Box width={MARK} flexShrink={0}>
-              <Text color={theme.colors.accent} bold>
-                {here ? ICON.pointer : ""}
-              </Text>
-            </Box>
-            <Box width={GUTTER} flexShrink={0}>
-              <Text color={theme.colors.good} dimColor={!here}>
-                {ICON.done}
-              </Text>
-            </Box>
-            <Box flexGrow={1} minWidth={0}>
-              <Text
-                wrap="truncate-end"
-                bold={here}
-                color={here ? theme.colors.accent : undefined}
-                dimColor={!here}
-              >
-                {cleanText(h.name)}
-              </Text>
-            </Box>
-            <Box width={10} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-              <Text
-                dimColor={!here}
-                bold={here}
-              >{h.sizeBytes > 0 ? formatBytes(h.sizeBytes) : "-"}
-              </Text>
-            </Box>
-            <Box width={12} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-              <Text
-                dimColor={!here}
-                bold={here}
-              >{when || "-"}
-              </Text>
-            </Box>
-            <Box width={4} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-              <Text
-                color={h.source ? ss.color : undefined}
-                dimColor={!h.source || !here}
-                bold={here}
-              >{h.source ? ss.tag : "mag"}
-              </Text>
             </Box>
           </Box>
         );

@@ -5,11 +5,40 @@ import { Panel } from "./Panel";
 import { wrapStep, windowStart } from "../move";
 import { GUTTER, ICON, sourceStyle } from "../theme";
 import { cleanText, formatBytes, formatRelative } from "../../util/format";
+import type { HistoryItem } from "../../download/history";
 
 const MARK = 2;
 const SIZE_W = 10;
 const DATE_W = 14;
 const SRC_W = 4;
+
+interface CategorizedHistory {
+  today: HistoryItem[];
+  yesterday: HistoryItem[];
+  older: HistoryItem[];
+}
+
+function categorizeHistory(items: HistoryItem[]): CategorizedHistory {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfYesterday = startOfToday - 86400 * 1000;
+
+  const today: HistoryItem[] = [];
+  const yesterday: HistoryItem[] = [];
+  const older: HistoryItem[] = [];
+
+  for (const h of items) {
+    if (h.completedAt >= startOfToday) {
+      today.push(h);
+    } else if (h.completedAt >= startOfYesterday) {
+      yesterday.push(h);
+    } else {
+      older.push(h);
+    }
+  }
+
+  return { today, yesterday, older };
+}
 
 export function CompletedView() {
   const { queue, region, contentWidth, listRows, openDownloadFolder, startDownload, copyMagnet, theme } =
@@ -61,10 +90,37 @@ export function CompletedView() {
     );
   }
 
-  const rows = Math.max(1, panelH - 2);
-  const start = windowStart(clamped, total, rows);
-  const visible = history.slice(start, start + rows);
+  const categorized = categorizeHistory(history);
   const selectedItem = history[clamped];
+
+  const flatRows: { type: "header" | "item"; title?: string; item?: HistoryItem; flatIdx?: number }[] = [];
+  let itemIndex = 0;
+
+  if (categorized.today.length > 0) {
+    flatRows.push({ type: "header", title: `Today (${categorized.today.length})` });
+    for (const item of categorized.today) {
+      flatRows.push({ type: "item", item, flatIdx: itemIndex++ });
+    }
+  }
+
+  if (categorized.yesterday.length > 0) {
+    flatRows.push({ type: "header", title: `Yesterday (${categorized.yesterday.length})` });
+    for (const item of categorized.yesterday) {
+      flatRows.push({ type: "item", item, flatIdx: itemIndex++ });
+    }
+  }
+
+  if (categorized.older.length > 0) {
+    flatRows.push({ type: "header", title: `Older (${categorized.older.length})` });
+    for (const item of categorized.older) {
+      flatRows.push({ type: "item", item, flatIdx: itemIndex++ });
+    }
+  }
+
+  const maxVisibleRows = Math.max(1, panelH - 3);
+  const selectedLineIdx = flatRows.findIndex((r) => r.type === "item" && r.flatIdx === clamped);
+  const startLine = windowStart(selectedLineIdx >= 0 ? selectedLineIdx : 0, flatRows.length, maxVisibleRows);
+  const visibleLines = flatRows.slice(startLine, startLine + maxVisibleRows);
 
   return (
     <Panel
@@ -76,7 +132,7 @@ export function CompletedView() {
     >
       <Box justifyContent="space-between" alignItems="center">
         <Text color={theme.colors.good} bold>
-          {ICON.done} {total} {total === 1 ? "file" : "files"} available on disk
+          {ICON.done} {total} {total === 1 ? "file" : "files"} completed
         </Text>
         {selectedItem ? (
           <Text dimColor wrap="truncate-end">
@@ -86,25 +142,19 @@ export function CompletedView() {
       </Box>
 
       <Box flexDirection="column" marginTop={1}>
-        <Box>
-          <Box width={MARK} flexShrink={0} />
-          <Box width={GUTTER} flexShrink={0} />
-          <Box flexGrow={1} minWidth={0} marginLeft={1}>
-            <Text bold dimColor>Name</Text>
-          </Box>
-          <Box width={SIZE_W} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-            <Text bold dimColor>Size</Text>
-          </Box>
-          <Box width={DATE_W} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-            <Text bold dimColor>Completed</Text>
-          </Box>
-          <Box width={SRC_W} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-            <Text bold dimColor>Src</Text>
-          </Box>
-        </Box>
+        {visibleLines.map((row, i) => {
+          if (row.type === "header") {
+            return (
+              <Box key={`h-${i}`} marginTop={i > 0 ? 1 : 0}>
+                <Text color={theme.colors.rule} bold>
+                  {`── ${row.title} ────────────────────────────────────────────────────────────`}
+                </Text>
+              </Box>
+            );
+          }
 
-        {visible.map((h, i) => {
-          const here = start + i === clamped && focused;
+          const h = row.item!;
+          const here = row.flatIdx === clamped && focused;
           const ss = sourceStyle(h.source, theme);
           return (
             <Box key={h.id}>
@@ -126,7 +176,7 @@ export function CompletedView() {
               </Box>
               <Box width={DATE_W} flexShrink={0} marginLeft={1} justifyContent="flex-end">
                 <Text dimColor={!here} bold={here}>
-                  {formatRelative(h.completedAt) || "─"}
+                  {formatRelative(h.completedAt / 1000) || "─"}
                 </Text>
               </Box>
               <Box width={SRC_W} flexShrink={0} marginLeft={1} justifyContent="flex-end">
