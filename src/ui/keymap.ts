@@ -29,7 +29,7 @@ export const HELP_GROUPS: HelpGroup[] = [
     title: "Search",
     hints: [
       { keys: "/", label: "Edit search" },
-      { keys: "q", label: "Quality tags (1-7)" },
+      { keys: "q / 1-7", label: "Quality filter (1-7)" },
       { keys: "f", label: "Filter list" },
       { keys: "d", label: "Download (shift+d: folder)" },
       { keys: "s", label: "Sort results" },
@@ -61,9 +61,6 @@ export const HELP_GROUPS: HelpGroup[] = [
   },
 ];
 
-// Footer labels stay terse so the contextual hint row never wraps; the `?`
-// overlay (HELP_GROUPS) carries the full, descriptive list. Rare or
-// self-announcing actions (z) stay `?`-only to keep every row inside 80 cols.
 const NAVIGATE: Hint = { keys: "↑↓←→", label: "Move" };
 
 const ALWAYS: Hint = { keys: "?", label: "Keys" };
@@ -105,8 +102,6 @@ export function footerHints(
       return [{ keys: "f", label: "Retry" }, { keys: "c", label: "Remove" }, FOLDER, TORRENT, SWITCH, ALWAYS];
     }
     if (downloadFocus === "recent") {
-      // Removal is list bookkeeping, never file deletion, and the label says
-      // so. Clear-all (shift+c) stays `?`-only, like D.
       return [
         { keys: "d", label: "Redownload" },
         { keys: "c", label: "Remove from list" },
@@ -120,10 +115,8 @@ export function footerHints(
   }
   return [
     NAVIGATE,
-    // The footer advertises only the default download key; D (download to a
-    // chosen folder) stays bound but lives in the `?` sheet alone.
     { keys: "d", label: "Download" },
-    { keys: "y", label: "Copy" },
+    { keys: "q", label: "Quality" },
     resultFocus === "detail" ? EXPORT : { keys: "s", label: "Sort" },
     { keys: "/", label: "Search" },
     { keys: "f", label: "Filter" },
