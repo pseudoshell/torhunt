@@ -74,7 +74,7 @@ export function Logo({
   return (
     <Box flexDirection="column">
       {lines.map((line, row) => {
-        const textRow = layout === "stacked" ? Math.max(0, row - 3) : row;
+        const textRow = layout === "stacked" ? Math.max(0, row - 2) : row;
         const textRows = layout === "stacked" ? 2 : rows;
         const tY = textRow / Math.max(1, textRows - 1);
         const chars = [...line];
