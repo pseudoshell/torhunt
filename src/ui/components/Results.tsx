@@ -151,14 +151,14 @@ export function Results() {
   }, [search.results, section, sort, hideDead, textFilter, qualityTag]);
 
   const focused = region === "content";
-  const [mode, setMode] = useState<Mode>("list");
+  const [mode, setMode] = useState<Mode>(searchModeTrigger > 0 ? "search" : "list");
   const [cursor, setCursor] = useState(0);
   const selRef = useRef<string | null>(null);
   const [detail, setDetail] = useState<TorrentResult | null>(null);
 
   const lastTriggerRef = useRef(searchModeTrigger);
   useEffect(() => {
-    if (searchModeTrigger !== lastTriggerRef.current) {
+    if (searchModeTrigger > 0 && searchModeTrigger !== lastTriggerRef.current) {
       lastTriggerRef.current = searchModeTrigger;
       setMode("search");
     }
