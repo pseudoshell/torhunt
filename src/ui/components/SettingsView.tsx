@@ -84,59 +84,68 @@ export function SettingsView() {
 
   return (
     <Panel title="settings" width={contentWidth} focused={focused} height={panelH}>
-      <Box flexDirection="column" gap={1}>
-        {/* Item 0: Download Directory */}
-        <Box justifyContent="space-between" alignItems="center">
-          <Box>
-            <Text color={selectedIdx === 0 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 0 && focused}>
-              {selectedIdx === 0 && focused ? "→ " : "  "}Download Folder:
-            </Text>
-          </Box>
-          <Box flexShrink={1} minWidth={0} marginLeft={2}>
-            {editingPath ? (
-              <TextField
-                defaultValue={config.downloadDir}
-                onSubmit={onSavePath}
-              />
-            ) : (
-              <Text color={theme.colors.accent} bold wrap="truncate-end">
-                {config.downloadDir}
+      <Box flexDirection="column" justifyContent="space-between" height={panelH}>
+        <Box flexDirection="column" gap={1}>
+          {/* Item 0: Download Directory */}
+          <Box justifyContent="space-between" alignItems="center">
+            <Box>
+              <Text color={selectedIdx === 0 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 0 && focused}>
+                {selectedIdx === 0 && focused ? "→ " : "  "}Download Folder:
               </Text>
-            )}
+            </Box>
+            <Box flexShrink={1} minWidth={0} marginLeft={2}>
+              {editingPath ? (
+                <TextField
+                  defaultValue={config.downloadDir}
+                  onSubmit={onSavePath}
+                />
+              ) : (
+                <Text color={theme.colors.accent} bold wrap="truncate-end">
+                  {config.downloadDir}
+                </Text>
+              )}
+            </Box>
+          </Box>
+
+          {/* Item 1: Theme */}
+          <Box justifyContent="space-between" alignItems="center">
+            <Box>
+              <Text color={selectedIdx === 1 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 1 && focused}>
+                {selectedIdx === 1 && focused ? "→ " : "  "}Color Theme:
+              </Text>
+            </Box>
+            <Box marginLeft={2}>
+              <Text color={theme.colors.accent} bold>
+                {`[${theme.name}]`}
+              </Text>
+            </Box>
+          </Box>
+
+          {/* Item 2: Spinner */}
+          <Box justifyContent="space-between" alignItems="center">
+            <Box>
+              <Text color={selectedIdx === 2 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 2 && focused}>
+                {selectedIdx === 2 && focused ? "→ " : "  "}Spinner Style:
+              </Text>
+            </Box>
+            <Box marginLeft={2}>
+              <Text color={theme.colors.accent} bold>
+                {`[${spinner.name}] (${spinner.frames[0]})`}
+              </Text>
+            </Box>
+          </Box>
+
+          <Box marginTop={1}>
+            <Text dimColor>
+              Press ↵ on Theme or Spinner to open list. Press ↵ on Folder to edit path.
+            </Text>
           </Box>
         </Box>
 
-        {/* Item 1: Theme */}
-        <Box justifyContent="space-between" alignItems="center">
-          <Box>
-            <Text color={selectedIdx === 1 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 1 && focused}>
-              {selectedIdx === 1 && focused ? "→ " : "  "}Color Theme:
-            </Text>
-          </Box>
-          <Box marginLeft={2}>
-            <Text color={theme.colors.accent} bold>
-              {`[${theme.name}]`}
-            </Text>
-          </Box>
-        </Box>
-
-        {/* Item 2: Spinner */}
-        <Box justifyContent="space-between" alignItems="center">
-          <Box>
-            <Text color={selectedIdx === 2 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 2 && focused}>
-              {selectedIdx === 2 && focused ? "→ " : "  "}Spinner Style:
-            </Text>
-          </Box>
-          <Box marginLeft={2}>
-            <Text color={theme.colors.accent} bold>
-              {`[${spinner.name}] (${spinner.frames[0]})`}
-            </Text>
-          </Box>
-        </Box>
-
-        <Box marginTop={1}>
-          <Text dimColor>
-            Press ↵ on Theme or Spinner to open list. Press ↵ on Folder to edit path.
+        {/* Anchored to the bottom-right inside the Settings panel */}
+        <Box justifyContent="flex-end">
+          <Text color={theme.colors.alt} dimColor>
+            {`torhunt v${VERSION}`}
           </Text>
         </Box>
       </Box>
