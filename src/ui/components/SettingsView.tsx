@@ -134,17 +134,10 @@ export function SettingsView() {
           </Box>
         </Box>
 
-        <Box marginTop={1} justifyContent="space-between" alignItems="center">
-          <Box flexGrow={1} minWidth={0}>
-            <Text dimColor>
-              Press ↵ on Theme or Spinner to open list. Press ↵ on Folder to edit.
-            </Text>
-          </Box>
-          <Box flexShrink={0} marginLeft={2}>
-            <Text color={theme.colors.alt} dimColor bold>
-              {`torhunt v${VERSION}`}
-            </Text>
-          </Box>
+        <Box marginTop={1}>
+          <Text dimColor>
+            Press ↵ on Theme or Spinner to open list. Press ↵ on Folder to edit path.
+          </Text>
         </Box>
       </Box>
     </Panel>

@@ -891,7 +891,10 @@ export function App({
                 : "flex"
             }
           >
-            <Footer hints={footerHints(region, section, downloadFocus, seedFocus, resultFocus)} />
+            <Footer
+              width={ruleWidth}
+              hints={footerHints(region, section, downloadFocus, seedFocus, resultFocus)}
+            />
           </Box>
         ) : null}
       </Box>
