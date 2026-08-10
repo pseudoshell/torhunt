@@ -16,6 +16,8 @@ export function SettingsView() {
     setThemeId,
     spinner,
     setSpinnerId,
+    openThemePicker,
+    openSpinnerPicker,
     contentWidth,
     region,
     listRows,
@@ -56,21 +58,9 @@ export function SettingsView() {
           setEditingPath(true);
           setCaptureMode("text");
         } else if (item?.id === "theme") {
-          const idx = THEMES.findIndex((t) => t.id === theme.id);
-          const next = THEMES[(idx + 1) % THEMES.length]!;
-          setThemeId(next.id);
-          const nextCfg = { ...config, theme: next.id };
-          setConfig(nextCfg);
-          saveConfig(nextCfg);
-          setNotice(`Theme: ${next.name}`);
+          openThemePicker();
         } else if (item?.id === "spinner") {
-          const idx = SPINNERS.findIndex((s) => s.id === spinner.id);
-          const next = SPINNERS[(idx + 1) % SPINNERS.length]!;
-          setSpinnerId(next.id);
-          const nextCfg = { ...config, spinner: next.id };
-          setConfig(nextCfg);
-          saveConfig(nextCfg);
-          setNotice(`Spinner: ${next.name}`);
+          openSpinnerPicker();
         }
       }
     },
@@ -143,7 +133,7 @@ export function SettingsView() {
 
         <Box marginTop={1}>
           <Text dimColor>
-            Press ↵ to edit folder or cycle themes/spinners. Changes auto-save instantly.
+            Press ↵ on Color Theme or Spinner Style to open full interactive list. Press ↵ on Download Folder to edit path.
           </Text>
         </Box>
       </Box>

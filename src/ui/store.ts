@@ -89,6 +89,10 @@ export interface Store {
   notice: string | null;
   setNotice: (s: string | null) => void;
 
+  openThemePicker: () => void;
+  openSpinnerPicker: () => void;
+  openFolderPicker: () => void;
+
   quitAll: () => void;
 
   listRows: number;
