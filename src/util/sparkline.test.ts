@@ -6,7 +6,7 @@ describe("sparkline", () => {
     const res = sparkline([0, 10, 20, 30, 40, 50, 60, 70]);
     expect(res).toHaveLength(8);
     expect(res[0]).toBe(" ");
-    expect(res[res.length - 1]).toBe("█");
+    expect(res[res.length - 1]).toBe("▇");
   });
 
   it("handles empty arrays with padding", () => {

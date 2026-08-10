@@ -1,8 +1,9 @@
-const SPARK_CHARS = [" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"];
+const SPARK_CHARS = [" ", " ", "▂", "▃", "▄", "▅", "▆", "▇"];
 
 /**
  * Generates a sparkline string from an array of numbers.
- * Normalizes values between min and max into 8 discrete block levels.
+ * Uses capped 7/8th height bars ("▇") to ensure a clean top margin
+ * so full-speed bars never merge into a solid block wall.
  */
 export function sparkline(values: number[], targetLength?: number): string {
   if (!values || values.length === 0) {
