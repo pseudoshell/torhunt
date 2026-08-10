@@ -5,7 +5,7 @@ torhunt stays small on purpose. The best way in is to read the code you're about
 ## Set up
 
 ```sh
-git clone <repo-url>
+git clone https://github.com/pseudoshell/torhunt.git
 cd torhunt
 npm install
 npm run dev

@@ -64,7 +64,7 @@ Your files stay on your disk, and nothing routes through a central server — to
 ## Development
 
 ```sh
-git clone <repo-url>
+git clone https://github.com/pseudoshell/torhunt.git
 cd torhunt
 npm install
 npm run dev
