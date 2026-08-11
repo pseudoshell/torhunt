@@ -16,9 +16,9 @@ export function sendNotification(title: string, message: string): void {
     if (platform === "win32") {
       // Windows 10/11 native XML Toast Notification
       const script = `
-        [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
-        [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
-        $template = @"
+[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
+$template = @"
 <toast>
     <visual>
         <binding template="ToastGeneric">
@@ -28,12 +28,14 @@ export function sendNotification(title: string, message: string): void {
     </visual>
 </toast>
 "@
-        $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-        $xml.LoadXml($template)
-        $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
-        [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("torhunt").Show($toast)
-      `;
-      spawn("powershell", ["-NoProfile", "-NonInteractive", "-Command", script], {
+$xml = New-Object Windows.Data.Xml.Dom.XmlDocument
+$xml.LoadXml($template)
+$toast = New-Object Windows.UI.Notifications.ToastNotification $xml
+$appId = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe'
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
+`;
+      const encoded = Buffer.from(script, "utf16le").toString("base64");
+      spawn("powershell", ["-NoProfile", "-NonInteractive", "-EncodedCommand", encoded], {
         windowsHide: true,
         stdio: "ignore",
       }).unref();
