@@ -42,6 +42,34 @@ export const SPINNERS: readonly SpinnerPreset[] = [
     frames: ["▰▱▱", "▰▰▱", "▰▰▰", "▱▰▰", "▱▱▰", "▱▱▱"],
     intervalMs: 100,
   },
+  {
+    id: "cassette",
+    name: "Retro Cassette",
+    description: "Analog cassette tape reel spinning",
+    frames: ["[ ◐  ◯ ]", "[ ◓  ◯ ]", "[ ◑  ◯ ]", "[ ◒  ◯ ]"],
+    intervalMs: 100,
+  },
+  {
+    id: "crt",
+    name: "CRT Scanline",
+    description: "Retro CRT monitor phosphor sweep",
+    frames: ["░▒▓█▓▒░", "▒▓█▓▒░░", "▓█▓▒░░░", "█▓▒░░░▓", "▓▒░░░▓█", "▒░░░▓█▓"],
+    intervalMs: 80,
+  },
+  {
+    id: "arcade",
+    name: "Retro Arcade",
+    description: "8-bit arcade bounce scanner",
+    frames: ["[C     ]", "[ C    ]", "[  C   ]", "[   C  ]", "[    C ]", "[     C]", "[    C ]", "[   C  ]", "[  C   ]", "[ C    ]"],
+    intervalMs: 80,
+  },
+  {
+    id: "synthwave",
+    name: "Synthwave Grid",
+    description: "Neon synthwave neon pulse grid",
+    frames: ["▲ △ △ △", "△ ▲ △ △", "△ △ ▲ △", "△ △ △ ▲", "△ △ ▲ △", "△ ▲ △ △"],
+    intervalMs: 90,
+  },
 ] as const;
 
 export const DEFAULT_SPINNER = SPINNERS.find((s) => s.id === "meter") ?? SPINNERS[0]!;

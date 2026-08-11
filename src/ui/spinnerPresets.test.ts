@@ -24,5 +24,9 @@ describe("spinnerPresets", () => {
     expect(getSpinner("non-existent")).toEqual(DEFAULT_SPINNER);
     expect(getSpinner("radar").id).toBe("radar");
     expect(getSpinner("baton").id).toBe("baton");
+    expect(getSpinner("cassette").id).toBe("cassette");
+    expect(getSpinner("crt").id).toBe("crt");
+    expect(getSpinner("arcade").id).toBe("arcade");
+    expect(getSpinner("synthwave").id).toBe("synthwave");
   });
 });
