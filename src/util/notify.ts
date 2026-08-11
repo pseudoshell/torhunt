@@ -35,20 +35,33 @@ $appId = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\power
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
 `;
       const encoded = Buffer.from(script, "utf16le").toString("base64");
-      spawn("powershell", ["-NoProfile", "-NonInteractive", "-EncodedCommand", encoded], {
+      const child = spawn("powershell", ["-NoProfile", "-NonInteractive", "-EncodedCommand", encoded], {
         windowsHide: true,
         stdio: "ignore",
-      }).unref();
+      });
+      child.on("error", () => {});
+      child.unref();
     } else if (platform === "darwin") {
-      spawn(
+      // macOS: Native AppleScript notification with system sound tone
+      const child = spawn(
         "osascript",
-        ["-e", `display notification "${safeMessage}" with title "${safeTitle}"`],
+        ["-e", `display notification "${safeMessage}" with title "${safeTitle}" sound name "Glass"`],
         { stdio: "ignore" },
-      ).unref();
+      );
+      child.on("error", () => {});
+      child.unref();
     } else if (platform === "linux") {
-      spawn("notify-send", [safeTitle, safeMessage], {
+      // Linux: notify-send with -a torhunt app tag and normal urgency
+      const child = spawn("notify-send", ["-a", "torhunt", "-u", "normal", safeTitle, safeMessage], {
         stdio: "ignore",
-      }).unref();
+      });
+      child.on("error", () => {
+        // Fallback for older libnotify versions without -a flag
+        const fallback = spawn("notify-send", [safeTitle, safeMessage], { stdio: "ignore" });
+        fallback.on("error", () => {});
+        fallback.unref();
+      });
+      child.unref();
     }
   } catch {
     // Ignore if OS notification daemon is unavailable
