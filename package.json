@@ -4,7 +4,7 @@
   "description": "A sleek, zero-setup torrent finder and downloader that lives right in your terminal.",
   "type": "module",
   "bin": {
-    "torhunt": "./dist/cli.cjs"
+    "torhunt": "dist/cli.cjs"
   },
   "files": [
     "dist",
