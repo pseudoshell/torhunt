@@ -25,6 +25,6 @@ describe("spinnerPresets", () => {
     expect(getSpinner("radar").id).toBe("radar");
     expect(getSpinner("baton").id).toBe("baton");
     expect(getSpinner("crt").id).toBe("crt");
-    expect(getSpinner("pacman").id).toBe("pacman");
+    expect(getSpinner("matrix-dot").id).toBe("matrix-dot");
   });
 });
