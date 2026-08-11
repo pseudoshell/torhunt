@@ -43,13 +43,6 @@ export const SPINNERS: readonly SpinnerPreset[] = [
     intervalMs: 100,
   },
   {
-    id: "cassette",
-    name: "Retro Cassette",
-    description: "Analog cassette tape reel spinning",
-    frames: ["[ ◐  ◯ ]", "[ ◓  ◯ ]", "[ ◑  ◯ ]", "[ ◒  ◯ ]"],
-    intervalMs: 100,
-  },
-  {
     id: "crt",
     name: "CRT Scanline",
     description: "Retro CRT monitor phosphor sweep",
@@ -57,18 +50,11 @@ export const SPINNERS: readonly SpinnerPreset[] = [
     intervalMs: 80,
   },
   {
-    id: "arcade",
-    name: "Retro Arcade",
-    description: "8-bit arcade bounce scanner",
-    frames: ["[C     ]", "[ C    ]", "[  C   ]", "[   C  ]", "[    C ]", "[     C]", "[    C ]", "[   C  ]", "[  C   ]", "[ C    ]"],
-    intervalMs: 80,
-  },
-  {
-    id: "synthwave",
-    name: "Synthwave Grid",
-    description: "Neon synthwave neon pulse grid",
-    frames: ["▲ △ △ △", "△ ▲ △ △", "△ △ ▲ △", "△ △ △ ▲", "△ △ ▲ △", "△ ▲ △ △"],
-    intervalMs: 90,
+    id: "pacman",
+    name: "Retro Pac-Man",
+    description: "8-bit Pac-Man chomping dots",
+    frames: ["C • • •", "c • • •", " C • •", " c • •", "  C •", "  c •", "   C", "   c"],
+    intervalMs: 110,
   },
 ] as const;
 
