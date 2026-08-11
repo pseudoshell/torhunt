@@ -49,23 +49,6 @@ export const SPINNERS: readonly SpinnerPreset[] = [
     frames: ["░▒▓█▓▒░", "▒▓█▓▒░░", "▓█▓▒░░░", "█▓▒░░░▓", "▓▒░░░▓█", "▒░░░▓█▓"],
     intervalMs: 80,
   },
-  {
-    id: "matrix-dot",
-    name: "Dot Matrix LED",
-    description: "25-dot LED matrix wave and pulse grid",
-    frames: [
-      "● ○ ○ ○ ○",
-      "● ● ○ ○ ○",
-      "● ● ● ○ ○",
-      "● ● ● ● ○",
-      "● ● ● ● ●",
-      "○ ● ● ● ●",
-      "○ ○ ● ● ●",
-      "○ ○ ○ ● ●",
-      "○ ○ ○ ○ ●",
-    ],
-    intervalMs: 70,
-  },
 ] as const;
 
 export const DEFAULT_SPINNER = SPINNERS.find((s) => s.id === "meter") ?? SPINNERS[0]!;
