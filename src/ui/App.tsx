@@ -248,6 +248,13 @@ export function App({
     updatePowerState();
     queue.on("change", updatePowerState);
 
+    const onStarted = (name: string): void => {
+      if (config.notifyOnComplete ?? true) {
+        sendNotification("torhunt — Download Started", cleanText(name));
+      }
+    };
+    queue.on("started", onStarted);
+
     const onCompleted = (name: string): void => {
       setNotice(`${ICON.done} ${truncate(cleanText(name), 40)}`);
       if (config.notifyOnComplete ?? true) {
@@ -266,6 +273,7 @@ export function App({
 
     return () => {
       queue.off("change", updatePowerState);
+      queue.off("started", onStarted);
       queue.off("completed", onCompleted);
       releaseKeepAwake();
     };

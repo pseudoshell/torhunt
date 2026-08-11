@@ -153,6 +153,7 @@ export class DownloadQueue extends EventEmitter {
     if (start) {
       this.startEngine(item);
       this.ensurePoll();
+      this.emit("started", item.name);
     }
     this.changed();
     void this.persist();
@@ -194,6 +195,7 @@ export class DownloadQueue extends EventEmitter {
       next.status = "downloading";
       next.speed = 0;
       this.startEngine(next);
+      this.emit("started", next.name);
       started = true;
     }
     if (started) {
