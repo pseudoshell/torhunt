@@ -30,6 +30,7 @@ $notify.Dispose()
 `;
       const encoded = Buffer.from(script, "utf16le").toString("base64");
       const child = spawn("powershell", ["-NoProfile", "-NonInteractive", "-EncodedCommand", encoded], {
+        detached: true,
         windowsHide: true,
         stdio: "ignore",
       });
@@ -40,18 +41,19 @@ $notify.Dispose()
       const child = spawn(
         "osascript",
         ["-e", `display notification "${safeMessage}" with title "${safeTitle}" sound name "Glass"`],
-        { stdio: "ignore" },
+        { detached: true, stdio: "ignore" },
       );
       child.on("error", () => {});
       child.unref();
     } else if (platform === "linux") {
       // Linux: notify-send with -a torhunt app tag and normal urgency
       const child = spawn("notify-send", ["-a", "torhunt", "-u", "normal", safeTitle, safeMessage], {
+        detached: true,
         stdio: "ignore",
       });
       child.on("error", () => {
         // Fallback for older libnotify versions without -a flag
-        const fallback = spawn("notify-send", [safeTitle, safeMessage], { stdio: "ignore" });
+        const fallback = spawn("notify-send", [safeTitle, safeMessage], { detached: true, stdio: "ignore" });
         fallback.on("error", () => {});
         fallback.unref();
       });
