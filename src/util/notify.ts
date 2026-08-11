@@ -14,23 +14,29 @@ export function sendNotification(title: string, message: string): void {
 
   try {
     if (platform === "win32") {
-      // Windows 10/11 system tray notification balloon with OS audio chime
+      // Windows 10/11 native WinRT Toast Notification
       const script = `
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-try { [System.Media.SystemSounds]::Asterisk.Play() } catch {}
-$icon = [System.Drawing.SystemIcons]::Information
-$notify = New-Object System.Windows.Forms.NotifyIcon
-$notify.Icon = $icon
-$notify.Text = "torhunt"
-$notify.Visible = $true
-$notify.ShowBalloonTip(5000, "${safeTitle}", "${safeMessage}", [System.Windows.Forms.ToolTipIcon]::Info)
-Start-Sleep -s 5
-$notify.Dispose()
+[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
+$template = @"
+<toast>
+    <visual>
+        <binding template="ToastGeneric">
+            <text>${safeTitle}</text>
+            <text>${safeMessage}</text>
+        </binding>
+    </visual>
+</toast>
+"@
+$xml = New-Object Windows.Data.Xml.Dom.XmlDocument
+$xml.LoadXml($template)
+$toast = New-Object Windows.UI.Notifications.ToastNotification $xml
+$appId = 'Windows.SystemToast.Notification'
+$notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId)
+$notifier.Show($toast)
 `;
       const encoded = Buffer.from(script, "utf16le").toString("base64");
       const child = spawn("powershell", ["-NoProfile", "-NonInteractive", "-EncodedCommand", encoded], {
-        detached: true,
         windowsHide: true,
         stdio: "ignore",
       });
