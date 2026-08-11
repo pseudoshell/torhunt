@@ -52,9 +52,14 @@ export const SPINNERS: readonly SpinnerPreset[] = [
   {
     id: "pacman",
     name: "Retro Pac-Man",
-    description: "8-bit Pac-Man chomping dots",
-    frames: ["C • • •", "c • • •", " C • •", " c • •", "  C •", "  c •", "   C", "   c"],
-    intervalMs: 110,
+    description: "Stationary Pac-Man chomping incoming dots",
+    frames: [
+      "C • • •",
+      "c  • •",
+      "C   •",
+      "c    ",
+    ],
+    intervalMs: 120,
   },
 ] as const;
 
