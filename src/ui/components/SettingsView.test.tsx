@@ -19,6 +19,7 @@ describe("SettingsView", () => {
     expect(ui.frame()).toContain("Color Theme:");
     expect(ui.frame()).toContain("Spinner Style:");
     expect(ui.frame()).toContain("Stay Awake:");
+    expect(ui.frame()).toContain("Desktop Alerts:");
     expect(ui.frame()).toContain("On Queue Finish:");
     expect(ui.frame()).toContain("v1.");
     ui.unmount();

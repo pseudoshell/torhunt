@@ -89,6 +89,7 @@ function makeStore(
       trackers: [],
       preventSleep: true,
       onComplete: "none",
+      notifyOnComplete: true,
     } as Config,
     setConfig: noop,
     theme: DEFAULT_THEME,
