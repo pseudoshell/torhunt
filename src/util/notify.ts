@@ -9,8 +9,8 @@ import os from "node:os";
  */
 export function sendNotification(title: string, message: string): void {
   const platform = os.platform();
-  const safeTitle = title.replace(/["'\\]/g, "");
-  const safeMessage = message.replace(/["'\\]/g, "");
+  const safeTitle = title.replace(/[<>&"'\\]/g, "").replace(/[\$()]/g, "");
+  const safeMessage = message.replace(/[<>&"'\\]/g, "").replace(/[\$()]/g, "");
 
   try {
     if (platform === "win32") {
