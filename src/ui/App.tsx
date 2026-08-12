@@ -164,6 +164,30 @@ export function App({
       const cfg = await loadConfig();
       const q = new DownloadQueue();
       q.setTrackers(cfg.trackers);
+
+      const onStarted = (name: string): void => {
+        if (cfg.notifyOnComplete ?? true) {
+          sendNotification("torhunt — Download Started", cleanText(name));
+        }
+      };
+      q.on("started", onStarted);
+
+      const onCompleted = (name: string): void => {
+        setNotice(`${ICON.done} ${truncate(cleanText(name), 40)}`);
+        if (cfg.notifyOnComplete ?? true) {
+          sendNotification("torhunt — Download Complete", cleanText(name));
+        }
+        if (q.activeCount === 0 && q.getItems().length === 0) {
+          releaseKeepAwake();
+          if (cfg.onComplete === "sleep") {
+            triggerSleep();
+          } else if (cfg.onComplete === "shutdown") {
+            triggerShutdown();
+          }
+        }
+      };
+      q.on("completed", onCompleted);
+
       // Crash-boot breaker: a marker left behind by the previous boot means it
       // died mid-restore, so this one restores everything paused with the
       // engine cold (safe mode) instead of walking into the same explosion.
@@ -248,33 +272,8 @@ export function App({
     updatePowerState();
     queue.on("change", updatePowerState);
 
-    const onStarted = (name: string): void => {
-      if (config.notifyOnComplete ?? true) {
-        sendNotification("torhunt — Download Started", cleanText(name));
-      }
-    };
-    queue.on("started", onStarted);
-
-    const onCompleted = (name: string): void => {
-      setNotice(`${ICON.done} ${truncate(cleanText(name), 40)}`);
-      if (config.notifyOnComplete ?? true) {
-        sendNotification("torhunt — Download Complete", cleanText(name));
-      }
-      if (queue.activeCount === 0 && queue.getItems().length === 0) {
-        releaseKeepAwake();
-        if (config.onComplete === "sleep") {
-          triggerSleep();
-        } else if (config.onComplete === "shutdown") {
-          triggerShutdown();
-        }
-      }
-    };
-    queue.on("completed", onCompleted);
-
     return () => {
       queue.off("change", updatePowerState);
-      queue.off("started", onStarted);
-      queue.off("completed", onCompleted);
       releaseKeepAwake();
     };
   }, [queue, config]);

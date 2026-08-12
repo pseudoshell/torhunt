@@ -515,7 +515,7 @@ export const ICON = {
   pending: "·",
   pointer: "→",
   dot: "·",
-  warn: "⚠",
+  warn: "!",
   bar: "▌",
   down: "↓",
   up: "↑",
