@@ -1,39 +1,39 @@
 # torhunt
 
-A sleek, zero-setup torrent finder and downloader that lives right in your terminal.
+A fast, distraction-free torrent search engine and downloader built for your terminal.
 
-Finding a torrent these days sucks. One site is a minefield of fake download buttons. Another hides the real link under a popup that spawns two more tabs. And after all that, half the results are dead, zero seeders.
+Modern torrent searching is broken. Most indexers are cluttered with intrusive ads, misleading download buttons, and dead magnet links.
 
-torhunt fixes that. One search checks a short, curated list of reputable sources at once, and whatever you pick downloads straight to your computer. No browser, no ads, no nonsense. The files are yours, saved to your downloads folder.
+torhunt cuts through the noise. A single search queries a curated selection of reliable sources simultaneously, streaming results straight to your terminal and downloading directly to your system. No browser tabs, no popups, no hassle.
 
-## Get started
+## Quick start
 
-1. **Install Node** (from [nodejs.org](https://nodejs.org)), it's all torhunt needs.
+1. **Install Node.js** (v22+ from [nodejs.org](https://nodejs.org)).
 2. **Open your terminal.**
-3. **Start it:**
+3. **Launch:**
 
    ```sh
    npx torhunt
    ```
 
-That's it. torhunt opens straight to a search bar: search for what you want, paste in a magnet link or a bare infohash, or just press Enter on an empty box to browse the curated library. From there it's all keypresses — nothing to memorize, and `?` brings up the full list anytime.
+That's all it takes. torhunt opens directly to an interactive search prompt: type your query, paste a magnet link or infohash, or press Enter on an empty query to browse curated picks. Everything is controlled via simple hotkeys — press `?` anytime for the full keymap.
 
 ## Features
 
-- **Instant search** — type and hit Enter. Results stream in from every source, tagged with size and peer count so you can see what'll come down fast.
-- **One-key downloads** — arrow to what you want and press `d` to save it, or `D` to pick a different folder for just that download.
-- **Background downloads** — keep searching while downloads run. Queue up as many as you want.
-- **Resume on restart** — anything interrupted picks up where it left off.
-- **Seeding controls** — finished downloads seed automatically. Pause or stop anytime from the Seeding tab.
-- **Completed library** — every finished download is archived in the Completed tab, grouped by date (Today, Yesterday, Older).
-- **Settings panel** — change your download folder, color theme, and spinner style from within the app.
-- **Global search** — press `/` from anywhere to jump straight to search.
-- **Customizable themes** — multiple built-in color themes to match your terminal aesthetic.
-- **Quality filters** — filter results by quality (4K, 1080p, 720p, x265, FLAC, FitGirl) with a single keypress.
+- **Concurrent search** — Query multiple indexers in parallel with real-time streaming results tagged by file size and live peer counts.
+- **One-key downloads** — Navigate to any item and press `d` to start downloading, or `D` to choose a custom target directory.
+- **Non-blocking queue** — Continue searching and browsing while transfers run in the background.
+- **State auto-resume** — Interrupted downloads pick up seamlessly where they left off after a restart.
+- **Seeding manager** — Finished downloads seed automatically. Pause, resume, or stop seeding anytime from the Seeding view.
+- **Completed archive** — Organized record of finished downloads grouped by date (Today, Yesterday, Older).
+- **In-app settings** — Change your download directory, color theme, and spinner animation on the fly.
+- **Instant navigation** — Press `/` from any view to jump straight to the search field.
+- **Custom visual themes** — Hand-crafted color palettes to match your terminal environment.
+- **Quality filters** — Filter results by resolution and format (4K, 1080p, 720p, x265, FLAC, FitGirl) with a single keypress.
 
-## What it searches
+## Indexer sources
 
-A short, hand-picked list of trusted sources:
+torhunt queries a curated list of trusted sources by category:
 
 | Category | Sources |
 | --- | --- |
@@ -42,24 +42,24 @@ A short, hand-picked list of trusted sources:
 | TV | EZTV, The Pirate Bay, 1337x, BitTorrented |
 | Anime | Nyaa, SubsPlease |
 
-Games are the only category that can run code, so they come from FitGirl alone, a repacker with a long, trusted track record. Everything else is plain video and subtitles. If a source is down, the search carries on without it, and torhunt tells you which one is offline.
+Game downloads are restricted to FitGirl due to their verified repack safety track record. Movies, TV, and anime sources cover clean video and audio streams. If any source is offline, search continues smoothly while displaying a status indicator.
 
-## Headless mode
+## Headless & server modes
 
-torhunt also runs without the TUI, for servers and seedboxes:
+torhunt includes headless background daemons for servers and seedboxes:
 
+```sh
+torhunt watch <dir>    download torrents or magnets dropped into a folder
+torhunt serve          HTTP API for remote magnet submission
+torhunt files          range-aware HTTP server for media streaming
+torhunt attach         persistent tmux session for remote SSH usage
 ```
-torhunt watch <dir>    download anything dropped into a folder
-torhunt serve          take magnets over HTTP
-torhunt files          stream finished downloads over HTTP
-torhunt attach         keep the TUI alive across ssh sessions
-```
 
-Add `--daemon` to keep watch, serve, or files running after you log out. Run `torhunt --help` for the full list of modes and flags.
+Append `--daemon` to run `watch`, `serve`, or `files` as background processes. Run `torhunt --help` for all commands and flags.
 
-## Privacy
+## Privacy & security
 
-Your files stay on your disk, and nothing routes through a central server — torhunt only talks to the torrent network directly. Once a download finishes it keeps seeding by default, sharing it back so the next person can find it too. Opt out anytime from the Seeding tab.
+torhunt connects directly to the BitTorrent P2P swarm. No telemetry, tracking, or proxying through third-party servers. All files land on your local storage, and seeding behavior can be toggled anytime.
 
 ## Development
 
@@ -70,7 +70,7 @@ npm install
 npm run dev
 ```
 
-`npm run dev` runs the live TUI through tsx, no build step needed. To build and run the bundled version:
+`npm run dev` launches the live TUI via `tsx`. To build and execute the production bundle:
 
 ```sh
 npm run build
