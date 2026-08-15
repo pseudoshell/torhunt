@@ -1,6 +1,6 @@
 {
   "name": "torhunt",
-  "version": "1.11.2",
+  "version": "1.12.0",
   "description": "A fast, distraction-free torrent search engine and downloader built for your terminal.",
   "type": "module",
   "bin": {
