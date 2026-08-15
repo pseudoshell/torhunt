@@ -118,20 +118,47 @@ export function compactMagnet(magnet: string): string {
   if (!hashMatch) return magnet.trim();
   const rawHash = hashMatch[1]!;
   const b32 = rawHash.length === 40 ? hexToBase32(rawHash) : rawHash.toUpperCase();
-  return `magnet:?xt=urn:btih:${b32}`;
+  // Fully uppercase so the QR encoder can use alphanumeric mode (5.5 bits/char
+  // instead of 8), which drops the matrix from Version 3 (29×29) to Version 2
+  // (25×25).  Magnet URI scheme/params and Base32 hashes are case-insensitive.
+  return `MAGNET:?XT=URN:BTIH:${b32}`;
 }
 
 export function encodeQrMatrix(text: string): boolean[][] {
+  // QR Alphanumeric charset: 0-9, A-Z, SP, $, %, *, +, -, ., /, :, ?
+  const ALNUM = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:?";
+  const alnumIndices: number[] = [];
+  let isAlphanumeric = true;
+  for (let i = 0; i < text.length; i++) {
+    const idx = ALNUM.indexOf(text[i]!);
+    if (idx === -1) {
+      isAlphanumeric = false;
+      break;
+    }
+    alnumIndices.push(idx);
+  }
+
   const utf8 = Buffer.from(text, "utf-8");
-  const dataLen = utf8.length;
+  const dataLen = isAlphanumeric ? text.length : utf8.length;
+
+  // Compute data bits needed for the chosen mode
+  const dataBitsForVersion = (version: number): number => {
+    if (isAlphanumeric) {
+      const ccBits = version < 10 ? 9 : 13;
+      const pairs = Math.floor(dataLen / 2);
+      const odd = dataLen % 2;
+      return 4 + ccBits + pairs * 11 + odd * 6;
+    }
+    const ccBits = version < 10 ? 8 : 16;
+    return 4 + ccBits + dataLen * 8;
+  };
 
   let chosenVer = -1;
   let verConfig: [number, number, number, number, number, number, number] | null = null;
   for (const row of VERSION_TABLE_L) {
     const version = row[0];
-    const charCountBits = version < 10 ? 8 : 16;
     const capacityBytes = row[3] * row[4] + row[5] * row[6];
-    const totalDataBits = 4 + charCountBits + dataLen * 8;
+    const totalDataBits = dataBitsForVersion(version);
     if (Math.ceil(totalDataBits / 8) <= capacityBytes) {
       chosenVer = version;
       verConfig = row;
@@ -152,11 +179,25 @@ export function encodeQrMatrix(text: string): boolean[][] {
     for (let i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1);
   };
 
-  appendBits(0b0100, 4);
-  const charCountBits = version < 10 ? 8 : 16;
-  appendBits(dataLen, charCountBits);
-  for (let i = 0; i < dataLen; i++) {
-    appendBits(utf8[i]!, 8);
+  if (isAlphanumeric) {
+    // Alphanumeric mode: indicator 0010, pairs encoded in 11 bits, odd in 6
+    appendBits(0b0010, 4);
+    const charCountBits = version < 10 ? 9 : 13;
+    appendBits(dataLen, charCountBits);
+    for (let i = 0; i < dataLen - 1; i += 2) {
+      appendBits(alnumIndices[i]! * 45 + alnumIndices[i + 1]!, 11);
+    }
+    if (dataLen % 2 === 1) {
+      appendBits(alnumIndices[dataLen - 1]!, 6);
+    }
+  } else {
+    // Byte mode: indicator 0100, each byte in 8 bits
+    appendBits(0b0100, 4);
+    const charCountBits = version < 10 ? 8 : 16;
+    appendBits(utf8.length, charCountBits);
+    for (let i = 0; i < utf8.length; i++) {
+      appendBits(utf8[i]!, 8);
+    }
   }
 
   const maxDataBits = dataCapacity * 8;
