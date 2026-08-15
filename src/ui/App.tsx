@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useApp, useInput, useStdout, useStdin } from "ink";
 import { promises as fs } from "node:fs";
 import { loadConfig, saveConfig, type Config } from "../config/config";
-import { normalizeDownloadDir } from "../config/folder";
+import { normalizeDownloadDir, resolveDownloadDir } from "../config/folder";
 import { DownloadQueue } from "../download/queue";
 import { loadQueue, loadSeeds } from "../download/persist";
 import { loadHistory } from "../download/history";
@@ -228,10 +228,13 @@ export function App({
           ? await magnetFromTorrentFile(initialTorrent)
           : null;
       if (launch) {
-        await fs.mkdir(cfg.downloadDir, { recursive: true }).catch(() => {});
+        const targetDir = resolveDownloadDir(cfg.downloadDir, {
+          categorySubfolders: cfg.categorySubfolders ?? true,
+        });
+        await fs.mkdir(targetDir, { recursive: true }).catch(() => {});
         q.add(
           { id: launch.infoHash, name: launch.name, magnet: launch.magnet },
-          cfg.downloadDir,
+          targetDir,
         );
         setView("browser");
         setSection("downloads");
@@ -396,8 +399,12 @@ export function App({
       sizeBytes?: number;
     }) => {
       if (!config || !queue) return;
-      void fs.mkdir(config.downloadDir, { recursive: true }).catch(() => {});
-      queue.add(input, config.downloadDir);
+      const targetDir = resolveDownloadDir(config.downloadDir, {
+        source: input.source,
+        categorySubfolders: config.categorySubfolders ?? true,
+      });
+      void fs.mkdir(targetDir, { recursive: true }).catch(() => {});
+      queue.add(input, targetDir);
       setNotice(`Added: ${truncate(cleanText(input.name), 40)}`);
       setSection("downloads");
       setRegion("content");
@@ -426,8 +433,12 @@ export function App({
     (raw: string) => {
       const input = pendingDownload;
       setPendingDownload(null);
-      const dir = normalizeDownloadDir(raw);
-      if (!queue || !input || !dir) return;
+      const baseDir = normalizeDownloadDir(raw);
+      if (!queue || !input || !baseDir || !config) return;
+      const targetDir = resolveDownloadDir(baseDir, {
+        source: input.source,
+        categorySubfolders: config.categorySubfolders ?? true,
+      });
       // add() ignores the dir for anything already active, so don't claim a
       // folder that won't be used. Failed items fall through: a re-add with a
       // fresh dir is exactly how a bad-disk download gets redirected.
@@ -438,19 +449,19 @@ export function App({
       }
       void (async () => {
         try {
-          await fs.mkdir(dir, { recursive: true });
+          await fs.mkdir(targetDir, { recursive: true });
         } catch {
-          setNotice(`Couldn't use folder: ${truncate(dir, 48)}`);
+          setNotice(`Couldn't use folder: ${truncate(targetDir, 48)}`);
           return;
         }
-        setLastDownloadToDir(dir);
-        queue.add(input, dir);
-        setNotice(`Added: ${truncate(cleanText(input.name), 28)} → ${truncate(dir, 36)}`);
+        setLastDownloadToDir(targetDir);
+        queue.add(input, targetDir);
+        setNotice(`Added: ${truncate(cleanText(input.name), 28)} → ${truncate(targetDir, 36)}`);
         setSection("downloads");
         setRegion("content");
       })();
     },
-    [queue, pendingDownload],
+    [queue, pendingDownload, config],
   );
 
   const copyMagnet = useCallback((input: { name: string; magnet: string }) => {

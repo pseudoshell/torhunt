@@ -145,6 +145,7 @@ export function makeTestStore(overrides: Partial<Store> = {}): Store {
   return {
     config: {
       downloadDir: "~/Downloads/torlink",
+      categorySubfolders: true,
       theme: "electric-cyan",
       spinner: "dots",
       trackers: [],

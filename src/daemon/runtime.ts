@@ -7,6 +7,7 @@
 
 import { promises as fs } from "node:fs";
 import { loadConfig } from "../config/config";
+import { resolveDownloadDir } from "../config/folder";
 import { DownloadQueue } from "../download/queue";
 import { loadQueue, loadSeeds } from "../download/persist";
 import { loadHistory } from "../download/history";

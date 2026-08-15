@@ -84,6 +84,7 @@ function makeStore(
   return {
     config: {
       downloadDir: "~/Downloads/torlink",
+      categorySubfolders: true,
       theme: "electric-cyan",
       spinner: "dots",
       trackers: [],
