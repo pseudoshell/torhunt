@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { VERSION } from "../../version";
 import { StoreContext } from "../store";
 import { fakeQueue, makeTestStore, renderUI } from "../testHarness";
 import { SettingsView } from "./SettingsView";
@@ -21,7 +22,7 @@ describe("SettingsView", () => {
     expect(ui.frame()).toContain("Stay Awake:");
     expect(ui.frame()).toContain("Desktop Alerts:");
     expect(ui.frame()).toContain("On Queue Finish:");
-    expect(ui.frame()).toContain("v1.");
+    expect(ui.frame()).toContain(`v${VERSION}`);
     ui.unmount();
   });
 

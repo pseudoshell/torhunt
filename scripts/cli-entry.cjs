@@ -4,7 +4,7 @@
 var major = parseInt(process.versions.node.split('.')[0], 10);
 if (major < 22) {
   process.stderr.write(
-    '\ntorlnk requires Node.js v22 or later.\n' +
+    '\ntorhunt requires Node.js v22 or later.\n' +
     'You are running v' + process.versions.node + '.\n\n' +
     'Upgrade:  https://nodejs.org\n' +
     'With nvm: nvm install 22 && nvm use 22\n\n'
@@ -35,22 +35,22 @@ try {
       },
     });
     process.stderr.write(
-      'torlnk: WebRTC peers unavailable (native module not installed); ' +
-        'TCP/UDP peers still work. https://github.com/baairon/torlink/issues/60\n'
+      'torhunt: WebRTC peers unavailable (native module not installed); ' +
+        'TCP/UDP peers still work. https://github.com/pseudoshell/torhunt/issues/60\n'
     );
   } else {
     // Node 22.0 to 22.14 has no module.registerHooks, so the eager import
     // cannot be redirected; a clear explanation beats the raw module error.
     process.stderr.write(
-      '\ntorlnk needs the WebRTC native module (node-datachannel), and it is\n' +
-        'not installed. Either upgrade to Node 22.15+ (torlnk then runs\n' +
+      '\ntorhunt needs the WebRTC native module (node-datachannel), and it is\n' +
+        'not installed. Either upgrade to Node 22.15+ (torhunt then runs\n' +
         'without WebRTC peers), or install the build tools and reinstall:\n' +
         '  Fedora:  sudo dnf install cmake gcc-c++ openssl-devel libstdc++-static\n' +
         '  Debian / Ubuntu:  sudo apt install cmake g++ libssl-dev\n' +
         '  macOS:   xcode-select --install\n' +
         '  Windows: install CMake and Visual Studio Build Tools\n' +
         'On npm 12, also allow install scripts: npm approve-scripts\n\n' +
-        'https://github.com/baairon/torlink/issues/60\n\n'
+        'https://github.com/pseudoshell/torhunt/issues/60\n\n'
     );
     process.exit(1);
   }

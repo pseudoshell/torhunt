@@ -1,5 +1,5 @@
 {
-  description = "Torlink is a torrent finder that lives in your terminal, with zero setup and nothing to configure.";
+  description = "Torhunt is a fast, distraction-free torrent search engine and downloader built for your terminal.";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -26,7 +26,7 @@
         }
       );
       overlays.default = final: prev: {
-        torlink = final.callPackage ./nix/package.nix { };
+        torhunt = final.callPackage ./nix/package.nix { };
       };
 
     };

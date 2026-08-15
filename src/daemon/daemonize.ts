@@ -3,7 +3,7 @@
 // a pidfile plus a run descriptor, and exits the parent. You can then log out and
 // it keeps running.
 //
-// The run descriptor is what lets `torlnk update` relaunch a daemon on its exact
+// The run descriptor is what lets `torhunt update` relaunch a daemon on its exact
 // original command after rebuilding.
 //
 // NOTE: on a box with systemd, a `systemctl --user` service with linger is a
@@ -15,7 +15,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { logsDir } from "../config/paths";
 
-const MARKER = "TORLINK_DAEMONIZED";
+const MARKER = "TORHUNT_DAEMONIZED";
+const LEGACY_MARKER = "TORLINK_DAEMONIZED";
 
 export function logPathFor(name: string): string {
   return path.join(logsDir, `${name}.log`);
@@ -29,7 +30,7 @@ export function runPathFor(name: string): string {
 
 // Records argv and cwd only, not env: a daemon relaunched after an update
 // inherits the updater's environment, so env-dependent behavior (proxies,
-// TORLINK_* overrides) follows the shell that ran `torlnk update`.
+// TORHUNT_* overrides) follows the shell that ran `torhunt update`.
 export interface RunDescriptor {
   name: string;
   pid: number;
@@ -64,13 +65,13 @@ export function spawnDaemon(name: string, argv: string[], cwd: string): number {
 // In the parent: fork a detached child and exit. In the already-detached child
 // (marker set): return so the caller keeps running normally.
 export function daemonize(name: string): void {
-  if (process.env[MARKER] === "1") return;
+  if (process.env[MARKER] === "1" || process.env[LEGACY_MARKER] === "1") return;
 
   const pid = spawnDaemon(name, process.argv.slice(1), process.cwd());
   const logPath = logPathFor(name);
   const pidPath = pidPathFor(name);
 
-  console.log(`torlink ${name} daemon started (pid ${pid}).`);
+  console.log(`torhunt ${name} daemon started (pid ${pid}).`);
   console.log(`  logs: ${logPath}`);
   console.log(`  stop: kill ${pid}   (or: kill $(cat ${pidPath}))`);
   process.exit(0);

@@ -45,7 +45,7 @@ export async function startRuntime(overrideDir?: string): Promise<Runtime> {
   queue.restoreSeeds(await loadSeeds(), { safe });
   setTimeout(disarmBootMarker, BOOT_SETTLE_MS).unref();
   if (safe) {
-    console.error("[torlnk] recovered from a crashed start: restored downloads are paused");
+    console.error("[torhunt] recovered from a crashed start: restored downloads are paused");
   }
   const downloadDir = overrideDir && overrideDir.trim() ? overrideDir.trim() : cfg.downloadDir;
   return { queue, downloadDir, recovered: safe };

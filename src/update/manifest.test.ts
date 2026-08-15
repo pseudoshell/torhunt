@@ -8,7 +8,7 @@ import { readManifest } from "./manifest";
 describe("readManifest", () => {
   let dir: string;
   beforeEach(() => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), "torlink-manifest-"));
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), "torhunt-manifest-"));
   });
   afterEach(() => {
     fs.rmSync(dir, { recursive: true, force: true });

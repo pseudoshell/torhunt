@@ -83,7 +83,7 @@ function makeStore(
   const noop = (): void => {};
   return {
     config: {
-      downloadDir: "~/Downloads/torlink",
+      downloadDir: "~/Downloads/torhunt",
       categorySubfolders: true,
       theme: "electric-cyan",
       spinner: "dots",

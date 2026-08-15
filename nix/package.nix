@@ -47,11 +47,11 @@ let
 in
 
 buildNpmPackage (finalAttrs: {
-  pname = "torlink";
-  version = "1.4.1";
+  pname = "torhunt";
+  version = "1.12.0";
   src = fetchFromGitHub {
-    owner = "baairon";
-    repo = "torlink";
+    owner = "pseudoshell";
+    repo = "torhunt";
     tag = "v${finalAttrs.version}";
     hash = "sha256-VXfYzwjhSS+zZCnGoRUCVGgmuRaV5KeYASASM4E9Xj4=";
   };
@@ -72,7 +72,7 @@ buildNpmPackage (finalAttrs: {
 
   # build node-datachannel, and wrap clipboard
   postInstall = ''
-    pushd $out/lib/node_modules/torlnk/node_modules/node-datachannel
+    pushd $out/lib/node_modules/torhunt/node_modules/node-datachannel
 
     # link shared nixpkgs openssl
     substituteInPlace CMakeLists.txt \
@@ -98,7 +98,7 @@ buildNpmPackage (finalAttrs: {
     popd
 
     # wrap clipboard
-    wrapProgram $out/bin/torlnk \
+    wrapProgram $out/bin/torhunt \
       --prefix PATH : ${
         lib.makeBinPath [
           wl-clipboard
@@ -108,12 +108,12 @@ buildNpmPackage (finalAttrs: {
   '';
 
   meta = {
-    description = "Torlink is a torrent finder that lives in your terminal, with zero setup and nothing to configure.";
-    homepage = "https://github.com/baairon/torlink";
-    changelog = "https://github.com/baairon/torlink/releases/tag/${finalAttrs.src.tag}";
+    description = "Torhunt is a fast, distraction-free torrent search engine and downloader built for your terminal.";
+    homepage = "https://github.com/pseudoshell/torhunt";
+    changelog = "https://github.com/pseudoshell/torhunt/releases/tag/${finalAttrs.src.tag}";
     license = lib.licenses.mit;
     maintainers = with lib.maintainers; [ ghastrum ];
-    mainProgram = "torlnk";
+    mainProgram = "torhunt";
     platforms = lib.platforms.linux;
   };
 })

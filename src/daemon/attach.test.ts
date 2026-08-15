@@ -3,8 +3,8 @@ import { tuiCommand, SESSION } from "./attach";
 
 describe("tuiCommand", () => {
   it("sh-quotes the node binary and script so tmux runs the plain TUI", () => {
-    expect(tuiCommand("/usr/bin/node", "/opt/torlink/dist/index.js")).toBe(
-      "'/usr/bin/node' '/opt/torlink/dist/index.js'",
+    expect(tuiCommand("/usr/bin/node", "/opt/torhunt/dist/index.js")).toBe(
+      "'/usr/bin/node' '/opt/torhunt/dist/index.js'",
     );
   });
   it("escapes single quotes in paths", () => {

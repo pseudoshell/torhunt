@@ -17,7 +17,7 @@ describe("isAlive", () => {
 describe("listRunDescriptors", () => {
   let dir: string;
   beforeEach(() => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), "torlink-restart-"));
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), "torhunt-restart-"));
   });
   afterEach(() => {
     fs.rmSync(dir, { recursive: true, force: true });

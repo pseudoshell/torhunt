@@ -97,7 +97,7 @@ export function parseRange(header: string | undefined, size: number): Range | nu
 }
 
 function log(message: string): void {
-  console.log(`[torlnk files] ${new Date().toISOString()} ${message}`);
+  console.log(`[torhunt files] ${new Date().toISOString()} ${message}`);
 }
 
 async function sendListing(res: http.ServerResponse, dir: string, method: string): Promise<void> {
@@ -179,7 +179,7 @@ export async function runFiles(options: FilesOptions = {}): Promise<void> {
   if (!LOOPBACK_HOSTS.has(host) && !token) {
     console.error(
       `error: refusing to bind ${host} without a token. Pass --token <secret> ` +
-        `(or set TORLINK_FILES_TOKEN), or bind 127.0.0.1.`,
+        `(or set TORHUNT_FILES_TOKEN), or bind 127.0.0.1.`,
     );
     process.exit(1);
     return;
