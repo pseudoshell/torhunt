@@ -63,6 +63,7 @@ import { FolderPrompt } from "./components/FolderPrompt";
 import { TrackersPrompt } from "./components/TrackersPrompt";
 import { ThemePrompt } from "./components/ThemePrompt";
 import { SpinnerPrompt } from "./components/SpinnerPrompt";
+import { QrModal } from "./components/QrModal";
 import { footerHints } from "./keymap";
 import { COLOR, ICON, DEFAULT_THEME, getTheme, nextTheme, type Theme } from "./theme";
 import { DEFAULT_SPINNER, getSpinner, type SpinnerPreset } from "./spinnerPresets";
@@ -151,6 +152,7 @@ export function App({
     sizeBytes?: number;
   } | null>(null);
   const [lastDownloadToDir, setLastDownloadToDir] = useState<string | null>(null);
+  const [qrModalItem, setQrModalItem] = useState<{ name: string; magnet: string } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const [recovered, setRecovered] = useState(false);
@@ -659,7 +661,8 @@ export function App({
         editingTrackers ||
         editingTheme ||
         editingSpinner ||
-        pendingDownload
+        pendingDownload ||
+        qrModalItem
           ? "help"
           : region,
       setRegion,
@@ -682,6 +685,7 @@ export function App({
       openThemePicker: () => setEditingTheme(true),
       openSpinnerPicker: () => setEditingSpinner(true),
       openFolderPicker: () => setEditingFolder(true),
+      openQrModal: (item: { name: string; magnet: string }) => setQrModalItem(item),
       searchModeTrigger,
       triggerSearch,
       bookmarks,
@@ -804,6 +808,10 @@ export function App({
       }
       if (key.escape) {
         if (captureMode === "esc") return;
+        if (qrModalItem) {
+          setQrModalItem(null);
+          return;
+        }
         if (region === "content") {
           setRegion("sidebar");
           return;
@@ -931,6 +939,21 @@ export function App({
           </Box>
         ) : null}
 
+        {qrModalItem ? (
+          <Box marginTop={1}>
+            <QrModal
+              width={ruleWidth}
+              name={qrModalItem.name}
+              magnet={qrModalItem.magnet}
+              onClose={() => setQrModalItem(null)}
+              onCopy={() => {
+                writeClipboard(qrModalItem.magnet);
+                setNotice("✓ Copied magnet link to clipboard");
+              }}
+            />
+          </Box>
+        ) : null}
+
         <Box
           height={bodyH}
           marginTop={compact ? 0 : 1}
@@ -940,7 +963,8 @@ export function App({
             editingTrackers ||
             editingTheme ||
             editingSpinner ||
-            pendingDownload
+            pendingDownload ||
+            qrModalItem
               ? "none"
               : "flex"
           }

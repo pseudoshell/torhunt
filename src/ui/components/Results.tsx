@@ -135,6 +135,7 @@ export function Results() {
     theme,
     searchModeTrigger,
     addBookmark,
+    openQrModal,
   } = useStore();
 
   const search = useConcurrentSearch(query);
@@ -268,13 +269,10 @@ export function Results() {
         setHideDead((h) => !h);
         return;
       }
-      if (input === "q") {
-        const options: (QualityTag | "ALL")[] = ["ALL", ...QUALITY_TAGS];
-        setQualityTag((curr) => {
-          const idx = options.indexOf(curr);
-          const next = options[(idx + 1) % options.length];
-          return next ?? "ALL";
-        });
+      if (input === "Q") {
+        if (results[clamped]?.magnet) {
+          openQrModal({ name: results[clamped]!.name, magnet: results[clamped]!.magnet });
+        }
         return;
       }
       if (input === "1") { setQualityTag("ALL"); return; }
@@ -364,7 +362,9 @@ export function Results() {
   const activeCat = CATEGORIES.find((c) => c.key === section);
 
   const status = (): ReactNode => {
-    if (search.loading) return <Spinner label={browsing ? "Fetching latest…" : "Searching…"} />;
+    if (search.loading && results.length === 0) {
+      return <Spinner label={browsing ? "Fetching latest…" : "Searching…"} />;
+    }
     const head = browsing
       ? `Latest from ${activeCat?.label ?? "all categories"}`
       : `Found ${results.length} result${results.length === 1 ? "" : "s"}`;
@@ -397,8 +397,8 @@ export function Results() {
         </Text>
       );
     }
-    const note = erroredCount > 0 ? `  (${erroredCount} source${erroredCount === 1 ? "" : "s"} down)` : "";
-    return <Text dimColor>{`${head}${note}${sortNote}${filterNote}`}</Text>;
+    const loadingNote = search.loading ? ` · Streaming ${search.done}/${search.total}…` : "";
+    return <Text dimColor>{`${head}${sortNote}${filterNote}${loadingNote}`}</Text>;
   };
 
   const showStats = useMemo(
@@ -419,7 +419,7 @@ export function Results() {
 
   const start = windowStart(clamped, results.length, listHeight);
   const visible = results.slice(start, start + listHeight);
-  const count = results.length > 0 ? `(${results.length})` : undefined;
+  const count = results.length > 0 ? `- ${results.length}` : undefined;
 
   return (
     <Box flexDirection="column">

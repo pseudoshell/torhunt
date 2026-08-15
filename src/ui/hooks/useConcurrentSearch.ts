@@ -65,6 +65,11 @@ function idleState(): ConcurrentSearchState {
 // leading-throttle the queue hooks in store.ts use for `update` events.
 const RESULT_FLUSH_MS = 150;
 
+// Cap the maximum time any single source can take before timing out gracefully.
+// Fast sources finish in <500ms; a 15s cap gives multi-step scrapers full room
+// to complete without hanging indefinitely.
+const SOURCE_TIMEOUT_MS = 15_000;
+
 export function useConcurrentSearch(query: string): ConcurrentSearchState {
   const [state, setState] = useState<ConcurrentSearchState>(idleState);
 
@@ -113,7 +118,12 @@ export function useConcurrentSearch(query: string): ConcurrentSearchState {
     });
 
     for (const source of SOURCES) {
-      cachedSearch(source, query, { signal: ctrl.signal })
+      const sourceSignal =
+        typeof AbortSignal.any === "function" && typeof AbortSignal.timeout === "function"
+          ? AbortSignal.any([ctrl.signal, AbortSignal.timeout(SOURCE_TIMEOUT_MS)])
+          : ctrl.signal;
+
+      cachedSearch(source, query, { signal: sourceSignal })
         .then((res) => {
           if (!alive) return;
           collected.push(...res);

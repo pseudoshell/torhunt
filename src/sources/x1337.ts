@@ -6,7 +6,7 @@ import type { SearchOptions, Source, SourceId, TorrentResult } from "./types";
 const HOSTS = ["1337x.to", "1337x.st", "x1337x.ws", "1337xx.to"];
 let workingHostIndex = 0;
 
-const MAX_DETAILS = 4;
+const MAX_DETAILS = 16;
 
 const STOP = new Set(["the", "a", "an", "of", "and", "or", "to"]);
 
@@ -70,7 +70,11 @@ async function detailInfo(
   opts: SearchOptions,
 ): Promise<{ magnet: string; added?: number } | null> {
   try {
-    const html = await fetchText(`${base}${path}`, opts, 1);
+    const detailSignal =
+      typeof AbortSignal.any === "function" && typeof AbortSignal.timeout === "function"
+        ? (opts.signal ? AbortSignal.any([opts.signal, AbortSignal.timeout(4000)]) : AbortSignal.timeout(4000))
+        : opts.signal;
+    const html = await fetchText(`${base}${path}`, { ...opts, signal: detailSignal }, 0);
     const raw = html.match(/magnet:\?xt=urn:btih:[^"'<>\s]+/i)?.[0];
     if (!raw) return null;
     return { magnet: unescapeEntities(raw), added: parseUploadDate(html) };

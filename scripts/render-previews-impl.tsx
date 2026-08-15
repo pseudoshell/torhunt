@@ -126,6 +126,7 @@ function makeStore(
     openThemePicker: noop,
     openSpinnerPicker: noop,
     openFolderPicker: noop,
+    openQrModal: noop,
     searchModeTrigger: 0,
     triggerSearch: noop,
     bookmarks: [],

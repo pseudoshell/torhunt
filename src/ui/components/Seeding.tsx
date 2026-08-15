@@ -31,7 +31,7 @@ function statusCell(seed: SeedItem | undefined, theme: Theme): { text: string; c
 }
 
 export function Seeding() {
-  const { queue, region, contentWidth, listRows, setNotice, openDownloadFolder, setSeedFocus, theme } =
+  const { queue, region, contentWidth, listRows, setNotice, openDownloadFolder, setSeedFocus, openQrModal, theme } =
     useStore();
   const history = useQueueHistory(queue);
   const seeds = useSeeds(queue);
@@ -67,6 +67,9 @@ export function Seeding() {
       } else if (input === "e") {
         const h = history[clamped];
         if (h) openDownloadFolder(h.dir);
+      } else if (input === "Q") {
+        const h = history[clamped];
+        if (h?.magnet) openQrModal({ name: h.name, magnet: h.magnet });
       }
     },
     { isActive: focused && total > 0 },
@@ -104,7 +107,7 @@ export function Seeding() {
       title="seeding"
       width={contentWidth}
       focused={focused}
-      count={seedingCount > 0 ? `(${seedingCount})` : undefined}
+      count={seedingCount > 0 ? `- ${seedingCount}` : undefined}
       height={panelH}
     >
       <Box>

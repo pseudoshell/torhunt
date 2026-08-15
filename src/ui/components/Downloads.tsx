@@ -53,6 +53,7 @@ export function Downloads() {
     openDownloadFolder,
     setDownloadFocus,
     exportTorrent,
+    openQrModal,
     theme,
   } = useStore();
   const active = useQueueItems(queue);
@@ -84,6 +85,9 @@ export function Downloads() {
       } else if (input === "s") {
         const item = active[clamped];
         if (item) exportTorrent({ id: item.id, name: item.name });
+      } else if (input === "Q") {
+        const item = active[clamped];
+        if (item?.magnet) openQrModal({ name: item.name, magnet: item.magnet });
       } else {
         const it = active[clamped];
         if (!it) return;
@@ -135,7 +139,7 @@ export function Downloads() {
   const statsW = Math.max(6, inner - MARK - GUTTER - barW - gap);
 
   return (
-    <Panel title="downloads" width={contentWidth} focused={focused} count={`(${active.length})`} height={panelH}>
+    <Panel title="downloads" width={contentWidth} focused={focused} count={active.length > 0 ? `- ${active.length}` : undefined} height={panelH}>
       {activeVisible.map((it, i) => {
         const here = activeStart + i === clamped && focused;
         const sc = statusColor(it.status, theme);

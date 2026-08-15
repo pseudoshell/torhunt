@@ -127,7 +127,7 @@ export function CompletedView() {
       title="completed downloads"
       width={contentWidth}
       focused={focused}
-      count={`(${total})`}
+      count={total > 0 ? `- ${total}` : undefined}
       height={panelH}
     >
       <Box justifyContent="space-between" alignItems="center">

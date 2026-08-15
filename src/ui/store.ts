@@ -93,6 +93,7 @@ export interface Store {
   openThemePicker: () => void;
   openSpinnerPicker: () => void;
   openFolderPicker: () => void;
+  openQrModal: (item: { name: string; magnet: string }) => void;
   searchModeTrigger: number;
   triggerSearch: () => void;
 

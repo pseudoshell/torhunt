@@ -22,6 +22,7 @@ export function BookmarksView() {
     startDownload,
     requestDownloadTo,
     copyMagnet,
+    openQrModal,
     theme,
   } = useStore();
   const focused = region === "content";
@@ -62,6 +63,9 @@ export function BookmarksView() {
       } else if (input === "y") {
         const b = bookmarks[clamped];
         if (b) copyMagnet({ name: b.name, magnet: b.magnet });
+      } else if (input === "Q") {
+        const b = bookmarks[clamped];
+        if (b?.magnet) openQrModal({ name: b.name, magnet: b.magnet });
       } else if (input === "C") {
         clearBookmarks();
       }
@@ -90,7 +94,7 @@ export function BookmarksView() {
       title="bookmarks"
       width={contentWidth}
       focused={focused}
-      count={`(${total})`}
+      count={total > 0 ? `- ${total}` : undefined}
       height={panelH}
     >
       <Box justifyContent="space-between" alignItems="center">
