@@ -16,7 +16,6 @@ import path from "node:path";
 import { logsDir } from "../config/paths";
 
 const MARKER = "TORHUNT_DAEMONIZED";
-const LEGACY_MARKER = "TORLINK_DAEMONIZED";
 
 export function logPathFor(name: string): string {
   return path.join(logsDir, `${name}.log`);
@@ -65,7 +64,7 @@ export function spawnDaemon(name: string, argv: string[], cwd: string): number {
 // In the parent: fork a detached child and exit. In the already-detached child
 // (marker set): return so the caller keeps running normally.
 export function daemonize(name: string): void {
-  if (process.env[MARKER] === "1" || process.env[LEGACY_MARKER] === "1") return;
+  if (process.env[MARKER] === "1") return;
 
   const pid = spawnDaemon(name, process.argv.slice(1), process.cwd());
   const logPath = logPathFor(name);

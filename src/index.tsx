@@ -59,7 +59,7 @@ if (cmd.kind === "update") {
   const options = {
     port: cmd.port,
     host: cmd.host,
-    token: cmd.token ?? process.env.TORHUNT_API_TOKEN ?? process.env.TORLINK_API_TOKEN,
+    token: cmd.token ?? process.env.TORHUNT_API_TOKEN,
     downloadDir: cmd.downloadDir,
     seedTimeMs: cmd.seedTimeMs,
     deleteFiles: cmd.deleteFiles,
@@ -70,7 +70,7 @@ if (cmd.kind === "update") {
   const options = {
     port: cmd.port,
     host: cmd.host,
-    token: cmd.token ?? process.env.TORHUNT_FILES_TOKEN ?? process.env.TORLINK_FILES_TOKEN,
+    token: cmd.token ?? process.env.TORHUNT_FILES_TOKEN,
     dir: cmd.dir,
   };
   void import("./daemon/files").then(({ runFiles }) => runFiles(options).catch(failHeadless));

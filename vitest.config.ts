@@ -10,7 +10,6 @@ export default defineConfig({
   test: {
     env: {
       TORHUNT_STATE_DIR: path.join(os.tmpdir(), "torhunt-test-state"),
-      TORLINK_STATE_DIR: path.join(os.tmpdir(), "torhunt-test-state"),
     },
   },
 });

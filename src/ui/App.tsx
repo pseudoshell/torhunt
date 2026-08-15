@@ -251,7 +251,7 @@ export function App({
   // Best-effort, once per launch, off the hot path: if a newer release exists,
   // surface a quiet banner. Any failure (offline, opt-out) just leaves it hidden.
   useEffect(() => {
-    if (process.env.TORHUNT_NO_UPDATE_CHECK || process.env.TORLINK_NO_UPDATE_CHECK) return;
+    if (process.env.TORHUNT_NO_UPDATE_CHECK) return;
     let alive = true;
     void (async () => {
       const latest = await fetchLatestVersion();
