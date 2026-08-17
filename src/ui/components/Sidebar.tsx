@@ -69,7 +69,7 @@ export function Sidebar() {
         <Box key={gi} flexDirection="column" marginTop={gi > 0 ? 1 : 0}>
           {group.title ? (
             <Box paddingLeft={1} marginBottom={0}>
-              <Text color={theme.colors.rule} bold>
+              <Text color={theme.colors.alt} dimColor bold>
                 {group.title}
               </Text>
             </Box>

@@ -11,7 +11,7 @@ import { getSource, SOURCES } from "../../sources/registry";
 import { stickCursor, wrapStep, windowStart, resultsPanelOuter } from "../move";
 import { sortResults, nextSort, sortLabel, sortArrow, type Sort, type SortField } from "../sort";
 import { filterResults } from "../filter";
-import { COLOR, GUTTER, ICON, sourceStyle, type Theme } from "../theme";
+import { GUTTER, ICON, sourceStyle, type Theme } from "../theme";
 import { cleanText, formatBytes, formatCount, formatRelative, stripControl, truncate } from "../../util/format";
 import { QUALITY_TAGS, type QualityTag } from "../../util/tags";
 import { QualityFilterBar } from "./QualityFilterBar";
@@ -377,7 +377,7 @@ export function Results() {
       const tabErrored = tabSources.every((s) => search.perSource[s.id]?.error);
       if (search.total === 0) {
         return (
-          <Text color={COLOR.warn}>
+          <Text color={theme.colors.warn}>
             No sources enabled for this tab.
           </Text>
         );
@@ -386,7 +386,7 @@ export function Results() {
         const down = tabSources.filter((s) => search.perSource[s.id]?.error);
         const who = down.length === 1 ? "The source" : `All ${down.length} sources`;
         return (
-          <Text color={COLOR.warn}>
+          <Text color={theme.colors.warn}>
             {`Couldn't reach ${activeCat.label}. ${who} may be down.`}
           </Text>
         );
@@ -453,27 +453,27 @@ export function Results() {
                   <Box>
                     <Box width={GUTTER} flexShrink={0} />
                     <Box width={numW} flexShrink={0} justifyContent="flex-end">
-                      <Text color={theme.colors.rule}>#</Text>
+                      <Text color={theme.colors.alt} dimColor bold>#</Text>
                     </Box>
                     <Box flexGrow={1} minWidth={0} marginLeft={1}>
-                      <Text color={theme.colors.rule}>NAME</Text>
+                      <Text color={theme.colors.alt} dimColor bold>NAME</Text>
                     </Box>
                     {showStats ? (
                       <>
                         <Box width={10} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-                          <Text color={theme.colors.rule}>{sortMark("size", "SIZE")}</Text>
+                          <Text color={theme.colors.alt} dimColor bold>{sortMark("size", "SIZE")}</Text>
                         </Box>
                         <Box width={9} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-                          <Text color={theme.colors.rule}>{sortMark("seeders", "S:L")}</Text>
+                          <Text color={theme.colors.alt} dimColor bold>{sortMark("seeders", "S:L")}</Text>
                         </Box>
                       </>
                     ) : (
                       <Box width={12} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-                        <Text color={theme.colors.rule}>ADDED</Text>
+                        <Text color={theme.colors.alt} dimColor bold>ADDED</Text>
                       </Box>
                     )}
                     <Box width={4} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-                      <Text color={theme.colors.rule}>{sortMark("source", "SRC")}</Text>
+                      <Text color={theme.colors.alt} dimColor bold>{sortMark("source", "SRC")}</Text>
                     </Box>
                   </Box>
                 ) : null}
@@ -487,7 +487,7 @@ export function Results() {
                         <Text color={here ? theme.colors.bright : theme.colors.accent} bold>{here ? ICON.pointer : " "}</Text>
                       </Box>
                       <Box width={numW} flexShrink={0} justifyContent="flex-end">
-                        <Text color={here ? theme.colors.bright : theme.colors.rule} bold={here}>{index + 1}</Text>
+                        <Text color={here ? theme.colors.bright : theme.colors.alt} dimColor={!here} bold={here}>{index + 1}</Text>
                       </Box>
                       <Box flexGrow={1} minWidth={0} marginLeft={1}>
                         <Text
