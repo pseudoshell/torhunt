@@ -28,6 +28,11 @@ describe("theme system", () => {
     expect(ids).toContain("gruvbox-dark");
     expect(ids).toContain("monokai-pro");
     expect(ids).toContain("deep-ocean");
+    expect(ids).toContain("cyberpunk-neon");
+    expect(ids).toContain("kanagawa-wave");
+    expect(ids).toContain("rose-pine");
+    expect(ids).toContain("mocha-lavender");
+    expect(ids).toContain("solar-flare");
 
     for (const t of THEMES) {
       expect(t.name).toBeTruthy();
