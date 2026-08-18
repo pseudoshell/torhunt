@@ -4,13 +4,13 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// The marker lives at a fixed path derived from TORLINK_STATE_DIR at module
+// The marker lives at a fixed path derived from TORHUNT_STATE_DIR at module
 // init, and other suites (persistSync tests) legitimately disarm it. Each test
 // here gets a private state dir + fresh module instances so parallel test
 // files can never race on the shared marker.
 async function isolated() {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "torlink-bootguard-"));
-  vi.stubEnv("TORLINK_STATE_DIR", dir);
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "torhunt-bootguard-"));
+  vi.stubEnv("TORHUNT_STATE_DIR", dir);
   vi.resetModules();
   const paths = await import("../config/paths");
   const bootguard = await import("./bootguard");

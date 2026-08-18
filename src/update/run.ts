@@ -1,4 +1,4 @@
-// `torlnk update`: fetch the latest release, apply it, and bring any --daemon
+// `torhunt update`: fetch the latest release, apply it, and bring any --daemon
 // process back on the new code. Two install shapes are handled: a git checkout
 // (pull, install, build) and a global npm install (npm i -g), chosen by whether
 // the package root is a git working tree. The package name and root come from

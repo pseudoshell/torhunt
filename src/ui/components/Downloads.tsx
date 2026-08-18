@@ -53,6 +53,7 @@ export function Downloads() {
     openDownloadFolder,
     setDownloadFocus,
     exportTorrent,
+    openQrModal,
     theme,
   } = useStore();
   const active = useQueueItems(queue);
@@ -84,6 +85,9 @@ export function Downloads() {
       } else if (input === "s") {
         const item = active[clamped];
         if (item) exportTorrent({ id: item.id, name: item.name });
+      } else if (input === "Q") {
+        const item = active[clamped];
+        if (item?.magnet) openQrModal({ name: item.name, magnet: item.magnet });
       } else {
         const it = active[clamped];
         if (!it) return;
@@ -132,10 +136,10 @@ export function Downloads() {
   const inner = contentWidth - 4;
   const gap = 2;
   const barW = Math.max(8, Math.min(28, Math.floor(inner * 0.4)));
-  const statsW = Math.max(6, inner - MARK - GUTTER - barW - gap);
+  const statsW = Math.max(6, inner - MARK - GUTTER - 1 - barW - gap);
 
   return (
-    <Panel title="downloads" width={contentWidth} focused={focused} count={`(${active.length})`} height={panelH}>
+    <Panel title="downloads" width={contentWidth} focused={focused} count={active.length > 0 ? `- ${active.length}` : undefined} height={panelH}>
       {activeVisible.map((it, i) => {
         const here = activeStart + i === clamped && focused;
         const sc = statusColor(it.status, theme);
@@ -151,7 +155,7 @@ export function Downloads() {
               <Box width={GUTTER} flexShrink={0}>
                 <Text color={sc}>{statusIcon(it.status)}</Text>
               </Box>
-              <Box flexGrow={1} minWidth={0}>
+              <Box flexGrow={1} minWidth={0} marginLeft={1}>
                 <Text
                   wrap="truncate-end"
                   bold={here}
@@ -176,7 +180,7 @@ export function Downloads() {
               </Box>
             </Box>
             <Box>
-              <Box width={MARK + GUTTER} flexShrink={0} />
+              <Box width={MARK + GUTTER + 1} flexShrink={0} />
               <ProgressBar
                 pct={it.progress}
                 width={barW}

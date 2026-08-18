@@ -11,7 +11,7 @@ import { getSource, SOURCES } from "../../sources/registry";
 import { stickCursor, wrapStep, windowStart, resultsPanelOuter } from "../move";
 import { sortResults, nextSort, sortLabel, sortArrow, type Sort, type SortField } from "../sort";
 import { filterResults } from "../filter";
-import { COLOR, GUTTER, ICON, sourceStyle, type Theme } from "../theme";
+import { GUTTER, ICON, sourceStyle, type Theme } from "../theme";
 import { cleanText, formatBytes, formatCount, formatRelative, stripControl, truncate } from "../../util/format";
 import { QUALITY_TAGS, type QualityTag } from "../../util/tags";
 import { QualityFilterBar } from "./QualityFilterBar";
@@ -135,6 +135,7 @@ export function Results() {
     theme,
     searchModeTrigger,
     addBookmark,
+    openQrModal,
   } = useStore();
 
   const search = useConcurrentSearch(query);
@@ -268,13 +269,10 @@ export function Results() {
         setHideDead((h) => !h);
         return;
       }
-      if (input === "q") {
-        const options: (QualityTag | "ALL")[] = ["ALL", ...QUALITY_TAGS];
-        setQualityTag((curr) => {
-          const idx = options.indexOf(curr);
-          const next = options[(idx + 1) % options.length];
-          return next ?? "ALL";
-        });
+      if (input === "Q") {
+        if (results[clamped]?.magnet) {
+          openQrModal({ name: results[clamped]!.name, magnet: results[clamped]!.magnet });
+        }
         return;
       }
       if (input === "1") { setQualityTag("ALL"); return; }
@@ -364,7 +362,9 @@ export function Results() {
   const activeCat = CATEGORIES.find((c) => c.key === section);
 
   const status = (): ReactNode => {
-    if (search.loading) return <Spinner label={browsing ? "Fetching latest…" : "Searching…"} />;
+    if (search.loading && results.length === 0) {
+      return <Spinner label={browsing ? "Fetching latest…" : "Searching…"} />;
+    }
     const head = browsing
       ? `Latest from ${activeCat?.label ?? "all categories"}`
       : `Found ${results.length} result${results.length === 1 ? "" : "s"}`;
@@ -377,7 +377,7 @@ export function Results() {
       const tabErrored = tabSources.every((s) => search.perSource[s.id]?.error);
       if (search.total === 0) {
         return (
-          <Text color={COLOR.warn}>
+          <Text color={theme.colors.warn}>
             No sources enabled for this tab.
           </Text>
         );
@@ -386,7 +386,7 @@ export function Results() {
         const down = tabSources.filter((s) => search.perSource[s.id]?.error);
         const who = down.length === 1 ? "The source" : `All ${down.length} sources`;
         return (
-          <Text color={COLOR.warn}>
+          <Text color={theme.colors.warn}>
             {`Couldn't reach ${activeCat.label}. ${who} may be down.`}
           </Text>
         );
@@ -397,8 +397,8 @@ export function Results() {
         </Text>
       );
     }
-    const note = erroredCount > 0 ? `  (${erroredCount} source${erroredCount === 1 ? "" : "s"} down)` : "";
-    return <Text dimColor>{`${head}${note}${sortNote}${filterNote}`}</Text>;
+    const loadingNote = search.loading ? ` · Streaming ${search.done}/${search.total}…` : "";
+    return <Text dimColor>{`${head}${sortNote}${filterNote}${loadingNote}`}</Text>;
   };
 
   const showStats = useMemo(
@@ -419,7 +419,7 @@ export function Results() {
 
   const start = windowStart(clamped, results.length, listHeight);
   const visible = results.slice(start, start + listHeight);
-  const count = results.length > 0 ? `(${results.length})` : undefined;
+  const count = results.length > 0 ? `- ${results.length}` : undefined;
 
   return (
     <Box flexDirection="column">
@@ -453,27 +453,27 @@ export function Results() {
                   <Box>
                     <Box width={GUTTER} flexShrink={0} />
                     <Box width={numW} flexShrink={0} justifyContent="flex-end">
-                      <Text color={theme.colors.rule}>#</Text>
+                      <Text color={theme.colors.alt} dimColor bold>#</Text>
                     </Box>
                     <Box flexGrow={1} minWidth={0} marginLeft={1}>
-                      <Text color={theme.colors.rule}>NAME</Text>
+                      <Text color={theme.colors.alt} dimColor bold>NAME</Text>
                     </Box>
                     {showStats ? (
                       <>
                         <Box width={10} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-                          <Text color={theme.colors.rule}>{sortMark("size", "SIZE")}</Text>
+                          <Text color={theme.colors.alt} dimColor bold>{sortMark("size", "SIZE")}</Text>
                         </Box>
                         <Box width={9} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-                          <Text color={theme.colors.rule}>{sortMark("seeders", "S:L")}</Text>
+                          <Text color={theme.colors.alt} dimColor bold>{sortMark("seeders", "S:L")}</Text>
                         </Box>
                       </>
                     ) : (
                       <Box width={12} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-                        <Text color={theme.colors.rule}>ADDED</Text>
+                        <Text color={theme.colors.alt} dimColor bold>ADDED</Text>
                       </Box>
                     )}
                     <Box width={4} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-                      <Text color={theme.colors.rule}>{sortMark("source", "SRC")}</Text>
+                      <Text color={theme.colors.alt} dimColor bold>{sortMark("source", "SRC")}</Text>
                     </Box>
                   </Box>
                 ) : null}
@@ -487,7 +487,7 @@ export function Results() {
                         <Text color={here ? theme.colors.bright : theme.colors.accent} bold>{here ? ICON.pointer : " "}</Text>
                       </Box>
                       <Box width={numW} flexShrink={0} justifyContent="flex-end">
-                        <Text color={here ? theme.colors.bright : theme.colors.rule} bold={here}>{index + 1}</Text>
+                        <Text color={here ? theme.colors.bright : theme.colors.alt} dimColor={!here} bold={here}>{index + 1}</Text>
                       </Box>
                       <Box flexGrow={1} minWidth={0} marginLeft={1}>
                         <Text

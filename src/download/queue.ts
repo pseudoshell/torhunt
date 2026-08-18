@@ -49,7 +49,7 @@ const HISTORY_MAX = 500;
 // Max torrents allowed to actively download at once. Overflow waits as "queued"
 // and starts automatically when a slot frees. 0 / unset = unlimited (default).
 function readMaxDownloads(): number {
-  const v = Number(process.env.TORLINK_MAX_DOWNLOADS);
+  const v = Number(process.env.TORHUNT_MAX_DOWNLOADS);
   return Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
 }
 

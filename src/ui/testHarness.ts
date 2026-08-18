@@ -144,7 +144,8 @@ export function makeTestStore(overrides: Partial<Store> = {}): Store {
   const noop = (): void => {};
   return {
     config: {
-      downloadDir: "~/Downloads/torlink",
+      downloadDir: "~/Downloads/torhunt",
+      categorySubfolders: true,
       theme: "electric-cyan",
       spinner: "dots",
       trackers: [],
@@ -186,6 +187,7 @@ export function makeTestStore(overrides: Partial<Store> = {}): Store {
     openThemePicker: noop,
     openSpinnerPicker: noop,
     openFolderPicker: noop,
+    openQrModal: noop,
     searchModeTrigger: 0,
     triggerSearch: noop,
     bookmarks: [],

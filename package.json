@@ -1,7 +1,7 @@
 {
   "name": "torhunt",
-  "version": "1.9.1",
-  "description": "A sleek, zero-setup torrent finder and downloader that lives right in your terminal.",
+  "version": "2.0.3",
+  "description": "A fast, distraction-free torrent search engine and downloader built for your terminal.",
   "type": "module",
   "bin": {
     "torhunt": "dist/cli.cjs"

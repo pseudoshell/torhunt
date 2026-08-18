@@ -14,26 +14,38 @@ export function sendNotification(title: string, message: string): void {
 
   try {
     if (platform === "win32") {
-      // Windows 10/11 native WinRT Toast Notification
+      // Windows 10/11 native WinRT Toast Notification with registered PowerShell AppID, sound cue & NotifyIcon fallback
+      const xmlPayload = `<toast><visual><binding template="ToastGeneric"><text>${safeTitle}</text><text>${safeMessage}</text></binding></visual><audio src="ms-winsoundevent:Notification.Default"/></toast>`;
+      const psXmlString = "'" + xmlPayload.replace(/'/g, "''") + "'";
+      const appId = "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe";
       const script = `
-[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
-[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
-$template = @"
-<toast>
-    <visual>
-        <binding template="ToastGeneric">
-            <text>${safeTitle}</text>
-            <text>${safeMessage}</text>
-        </binding>
-    </visual>
-</toast>
-"@
-$xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-$xml.LoadXml($template)
-$toast = New-Object Windows.UI.Notifications.ToastNotification $xml
-$appId = 'Windows.SystemToast.Notification'
-$notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId)
-$notifier.Show($toast)
+$success = $false
+try {
+    [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+    [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
+    $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
+    $xml.LoadXml(${psXmlString})
+    $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
+    $notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('${appId}')
+    $notifier.Show($toast)
+    $success = $true
+} catch {}
+
+if (-not $success) {
+    try {
+        Add-Type -AssemblyName System.Windows.Forms
+        Add-Type -AssemblyName System.Drawing
+        $notify = New-Object System.Windows.Forms.NotifyIcon
+        $notify.Icon = [System.Drawing.SystemIcons]::Information
+        $notify.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Info
+        $notify.BalloonTipTitle = '${safeTitle}'
+        $notify.BalloonTipText = '${safeMessage}'
+        $notify.Visible = $true
+        $notify.ShowBalloonTip(5000)
+        Start-Sleep -s 5
+        $notify.Dispose()
+    } catch {}
+}
 `;
       const encoded = Buffer.from(script, "utf16le").toString("base64");
       const child = spawn("powershell", ["-NoProfile", "-NonInteractive", "-EncodedCommand", encoded], {

@@ -49,7 +49,7 @@ describe("DownloadQueue seeding", () => {
 
   it("exports cached .torrent metadata for a history item", async () => {
     const q = new DownloadQueue();
-    const outDir = await fs.mkdtemp(path.join(os.tmpdir(), "torlink-queue-export-"));
+    const outDir = await fs.mkdtemp(path.join(os.tmpdir(), "torhunt-queue-export-"));
     const item = h({ id: "h5", name: "Some/Torrent", dir: outDir });
     try {
       q.restoreHistory([item]);
@@ -70,7 +70,7 @@ describe("DownloadQueue seeding", () => {
 describe("DownloadQueue.fetchAndExportTorrent", () => {
   it("exports cached metadata immediately, without touching the engine", async () => {
     const q = new DownloadQueue();
-    const outDir = await fs.mkdtemp(path.join(os.tmpdir(), "torlink-fetch-export-"));
+    const outDir = await fs.mkdtemp(path.join(os.tmpdir(), "torhunt-fetch-export-"));
     const fakeEngine = (q as unknown as { engine: { add: () => void } }).engine;
     fakeEngine.add = () => {
       throw new Error("must not touch the engine when metadata is cached");
@@ -96,7 +96,7 @@ describe("DownloadQueue.fetchAndExportTorrent", () => {
 
   it("skips a magnet already active in the queue instead of double-adding it", async () => {
     const q = new DownloadQueue();
-    const outDir = await fs.mkdtemp(path.join(os.tmpdir(), "torlink-fetch-export-"));
+    const outDir = await fs.mkdtemp(path.join(os.tmpdir(), "torhunt-fetch-export-"));
     const fakeEngine = (q as unknown as { engine: { add: () => void } }).engine;
     fakeEngine.add = () => {
       throw new Error("must not add a torrent that's already active in the queue");
@@ -120,7 +120,7 @@ describe("DownloadQueue.fetchAndExportTorrent", () => {
 
   it("fetches metadata over the network, tears the handle down immediately, then exports", async () => {
     const q = new DownloadQueue();
-    const outDir = await fs.mkdtemp(path.join(os.tmpdir(), "torlink-fetch-export-"));
+    const outDir = await fs.mkdtemp(path.join(os.tmpdir(), "torhunt-fetch-export-"));
     const removed: string[] = [];
     const fakeEngine = (
       q as unknown as {
@@ -161,7 +161,7 @@ describe("DownloadQueue.fetchAndExportTorrent", () => {
 
   it("resolves null and tears down the handle when the metadata fetch fails", async () => {
     const q = new DownloadQueue();
-    const outDir = await fs.mkdtemp(path.join(os.tmpdir(), "torlink-fetch-export-"));
+    const outDir = await fs.mkdtemp(path.join(os.tmpdir(), "torhunt-fetch-export-"));
     const removed: string[] = [];
     const fakeEngine = (
       q as unknown as {
@@ -194,7 +194,7 @@ describe("DownloadQueue.fetchAndExportTorrent", () => {
 
   it("gives up after a metadata timeout and tears the handle down", async () => {
     const q = new DownloadQueue();
-    const outDir = await fs.mkdtemp(path.join(os.tmpdir(), "torlink-fetch-export-"));
+    const outDir = await fs.mkdtemp(path.join(os.tmpdir(), "torhunt-fetch-export-"));
     const removed: string[] = [];
     const fakeEngine = (
       q as unknown as {

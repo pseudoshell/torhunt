@@ -35,12 +35,25 @@ export function SettingsView() {
 
   const SETTING_ITEMS = [
     { id: "downloadDir", label: "Download Folder" },
+    { id: "categorySubfolders", label: "Category Subfolders" },
     { id: "theme", label: "Color Theme" },
     { id: "spinner", label: "Spinner Loader" },
     { id: "preventSleep", label: "Stay Awake" },
     { id: "notifyOnComplete", label: "Desktop Alerts" },
     { id: "onComplete", label: "When Finished" },
   ];
+
+  const toggleCategorySubfolders = () => {
+    const nextVal = !(config.categorySubfolders ?? true);
+    const nextCfg = { ...config, categorySubfolders: nextVal };
+    setConfig(nextCfg);
+    saveConfig(nextCfg);
+    setNotice(
+      nextVal
+        ? "Category Subfolders enabled: Downloads organized in Movies, TV, Anime, Games subfolders"
+        : "Category Subfolders disabled: Downloads saved directly in root download folder",
+    );
+  };
 
   const togglePreventSleep = () => {
     const nextVal = !(config.preventSleep ?? true);
@@ -95,6 +108,8 @@ export function SettingsView() {
         if (item?.id === "downloadDir") {
           setEditingPath(true);
           setCaptureMode("text");
+        } else if (item?.id === "categorySubfolders") {
+          toggleCategorySubfolders();
         } else if (item?.id === "theme") {
           openThemePicker();
         } else if (item?.id === "spinner") {
@@ -149,11 +164,25 @@ export function SettingsView() {
             </Box>
           </Box>
 
-          {/* Item 1: Theme */}
+          {/* Item 1: Category Subfolders */}
           <Box justifyContent="space-between" alignItems="center">
             <Box>
               <Text color={selectedIdx === 1 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 1 && focused}>
-                {selectedIdx === 1 && focused ? "→ " : "  "}Color Theme:
+                {selectedIdx === 1 && focused ? "→ " : "  "}Category Subfolders:
+              </Text>
+            </Box>
+            <Box marginLeft={2}>
+              <Text color={(config.categorySubfolders ?? true) ? theme.colors.good : theme.colors.alt} bold>
+                {(config.categorySubfolders ?? true) ? "[Enabled]" : "[Disabled]"}
+              </Text>
+            </Box>
+          </Box>
+
+          {/* Item 2: Theme */}
+          <Box justifyContent="space-between" alignItems="center">
+            <Box>
+              <Text color={selectedIdx === 2 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 2 && focused}>
+                {selectedIdx === 2 && focused ? "→ " : "  "}Color Theme:
               </Text>
             </Box>
             <Box marginLeft={2}>
@@ -163,11 +192,11 @@ export function SettingsView() {
             </Box>
           </Box>
 
-          {/* Item 2: Spinner */}
+          {/* Item 3: Spinner */}
           <Box justifyContent="space-between" alignItems="center">
             <Box>
-              <Text color={selectedIdx === 2 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 2 && focused}>
-                {selectedIdx === 2 && focused ? "→ " : "  "}Spinner Style:
+              <Text color={selectedIdx === 3 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 3 && focused}>
+                {selectedIdx === 3 && focused ? "→ " : "  "}Spinner Style:
               </Text>
             </Box>
             <Box marginLeft={2}>
@@ -177,11 +206,11 @@ export function SettingsView() {
             </Box>
           </Box>
 
-          {/* Item 3: Stay Awake */}
+          {/* Item 4: Stay Awake */}
           <Box justifyContent="space-between" alignItems="center">
             <Box>
-              <Text color={selectedIdx === 3 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 3 && focused}>
-                {selectedIdx === 3 && focused ? "→ " : "  "}Stay Awake:
+              <Text color={selectedIdx === 4 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 4 && focused}>
+                {selectedIdx === 4 && focused ? "→ " : "  "}Stay Awake:
               </Text>
             </Box>
             <Box marginLeft={2}>
@@ -191,11 +220,11 @@ export function SettingsView() {
             </Box>
           </Box>
 
-          {/* Item 4: Desktop Alerts */}
+          {/* Item 5: Desktop Alerts */}
           <Box justifyContent="space-between" alignItems="center">
             <Box>
-              <Text color={selectedIdx === 4 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 4 && focused}>
-                {selectedIdx === 4 && focused ? "→ " : "  "}Desktop Alerts:
+              <Text color={selectedIdx === 5 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 5 && focused}>
+                {selectedIdx === 5 && focused ? "→ " : "  "}Desktop Alerts:
               </Text>
             </Box>
             <Box marginLeft={2}>
@@ -205,11 +234,11 @@ export function SettingsView() {
             </Box>
           </Box>
 
-          {/* Item 5: On Complete */}
+          {/* Item 6: On Complete */}
           <Box justifyContent="space-between" alignItems="center">
             <Box>
-              <Text color={selectedIdx === 5 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 5 && focused}>
-                {selectedIdx === 5 && focused ? "→ " : "  "}On Queue Finish:
+              <Text color={selectedIdx === 6 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 6 && focused}>
+                {selectedIdx === 6 && focused ? "→ " : "  "}On Queue Finish:
               </Text>
             </Box>
             <Box marginLeft={2}>
@@ -234,7 +263,7 @@ export function SettingsView() {
 
           <Box marginTop={1}>
             <Text dimColor>
-              Press ↵ to edit folder, pick theme/spinner, toggle stay awake/alerts, or cycle finish action.
+              Press ↵ to edit folder, toggle category folders, pick theme/spinner, or set alerts/actions.
             </Text>
           </Box>
         </Box>

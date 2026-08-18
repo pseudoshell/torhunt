@@ -3,7 +3,7 @@ import { Box, Text, useInput } from "ink";
 import { useStore, useQueueHistory, useSeeds, type SeedFocus } from "../store";
 import { Panel } from "./Panel";
 import { wrapStep, windowStart } from "../move";
-import { COLOR, GUTTER, ICON, sourceStyle } from "../theme";
+import { GUTTER, ICON, sourceStyle } from "../theme";
 import { cleanText, formatBytes, formatBytesPerSec, truncate } from "../../util/format";
 import type { SeedItem } from "../../download/types";
 
@@ -31,7 +31,7 @@ function statusCell(seed: SeedItem | undefined, theme: Theme): { text: string; c
 }
 
 export function Seeding() {
-  const { queue, region, contentWidth, listRows, setNotice, openDownloadFolder, setSeedFocus, theme } =
+  const { queue, region, contentWidth, listRows, setNotice, openDownloadFolder, setSeedFocus, openQrModal, theme } =
     useStore();
   const history = useQueueHistory(queue);
   const seeds = useSeeds(queue);
@@ -67,6 +67,9 @@ export function Seeding() {
       } else if (input === "e") {
         const h = history[clamped];
         if (h) openDownloadFolder(h.dir);
+      } else if (input === "Q") {
+        const h = history[clamped];
+        if (h?.magnet) openQrModal({ name: h.name, magnet: h.magnet });
       }
     },
     { isActive: focused && total > 0 },
@@ -104,12 +107,12 @@ export function Seeding() {
       title="seeding"
       width={contentWidth}
       focused={focused}
-      count={seedingCount > 0 ? `(${seedingCount})` : undefined}
+      count={seedingCount > 0 ? `- ${seedingCount}` : undefined}
       height={panelH}
     >
       <Box>
         {seedingCount > 0 ? (
-          <Text color={COLOR.good}>
+          <Text color={theme.colors.good}>
             {ICON.up} {formatBytesPerSec(totalUp) || "0 B/s"}
             <Text dimColor>{`  ${ICON.dot}  ${totalPeers} peers  ${ICON.dot}  ${formatBytes(totalShared)} shared back`}</Text>
           </Text>
@@ -123,16 +126,16 @@ export function Seeding() {
           <Box width={MARK} flexShrink={0} />
           <Box width={GUTTER} flexShrink={0} />
           <Box flexGrow={1} minWidth={0} marginLeft={1}>
-            <Text bold dimColor>Name</Text>
+            <Text color={theme.colors.alt} dimColor bold>Name</Text>
           </Box>
           <Box width={SIZE_W} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-            <Text bold dimColor>Size</Text>
+            <Text color={theme.colors.alt} dimColor bold>Size</Text>
           </Box>
           <Box width={STATUS_W} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-            <Text bold dimColor>Status</Text>
+            <Text color={theme.colors.alt} dimColor bold>Status</Text>
           </Box>
           <Box width={SRC_W} flexShrink={0} marginLeft={1} justifyContent="flex-end">
-            <Text bold dimColor>Src</Text>
+            <Text color={theme.colors.alt} dimColor bold>Src</Text>
           </Box>
         </Box>
 

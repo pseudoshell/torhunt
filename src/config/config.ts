@@ -6,6 +6,7 @@ export type OnCompleteAction = "none" | "sleep" | "shutdown";
 
 export interface Config {
   downloadDir: string;
+  categorySubfolders: boolean;
   trackers: string[];
   theme: string;
   spinner: string;
@@ -16,6 +17,7 @@ export interface Config {
 
 export const defaultConfig: Config = {
   downloadDir: defaultDownloadDir,
+  categorySubfolders: true,
   trackers: [],
   theme: "electric-cyan",
   spinner: "meter",
@@ -38,6 +40,10 @@ export async function loadConfig(): Promise<Config> {
         typeof parsed.downloadDir === "string" && parsed.downloadDir
           ? parsed.downloadDir
           : defaultDownloadDir,
+      categorySubfolders:
+        typeof parsed.categorySubfolders === "boolean"
+          ? parsed.categorySubfolders
+          : defaultConfig.categorySubfolders,
       trackers: Array.isArray(parsed.trackers)
         ? parsed.trackers.filter((t): t is string => typeof t === "string" && t.length > 0)
         : [],

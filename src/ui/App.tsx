@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useApp, useInput, useStdout, useStdin } from "ink";
 import { promises as fs } from "node:fs";
 import { loadConfig, saveConfig, type Config } from "../config/config";
-import { normalizeDownloadDir } from "../config/folder";
+import { normalizeDownloadDir, resolveDownloadDir } from "../config/folder";
 import { DownloadQueue } from "../download/queue";
 import { loadQueue, loadSeeds } from "../download/persist";
 import { loadHistory } from "../download/history";
@@ -63,6 +63,7 @@ import { FolderPrompt } from "./components/FolderPrompt";
 import { TrackersPrompt } from "./components/TrackersPrompt";
 import { ThemePrompt } from "./components/ThemePrompt";
 import { SpinnerPrompt } from "./components/SpinnerPrompt";
+import { QrModal } from "./components/QrModal";
 import { footerHints } from "./keymap";
 import { COLOR, ICON, DEFAULT_THEME, getTheme, nextTheme, type Theme } from "./theme";
 import { DEFAULT_SPINNER, getSpinner, type SpinnerPreset } from "./spinnerPresets";
@@ -151,6 +152,7 @@ export function App({
     sizeBytes?: number;
   } | null>(null);
   const [lastDownloadToDir, setLastDownloadToDir] = useState<string | null>(null);
+  const [qrModalItem, setQrModalItem] = useState<{ name: string; magnet: string } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const [recovered, setRecovered] = useState(false);
@@ -164,6 +166,30 @@ export function App({
       const cfg = await loadConfig();
       const q = new DownloadQueue();
       q.setTrackers(cfg.trackers);
+
+      const onStarted = (name: string): void => {
+        if (cfg.notifyOnComplete ?? true) {
+          sendNotification("torhunt — Download Started", cleanText(name));
+        }
+      };
+      q.on("started", onStarted);
+
+      const onCompleted = (name: string): void => {
+        setNotice(`${ICON.done} ${truncate(cleanText(name), 40)}`);
+        if (cfg.notifyOnComplete ?? true) {
+          sendNotification("torhunt — Download Complete", cleanText(name));
+        }
+        if (q.activeCount === 0 && q.getItems().length === 0) {
+          releaseKeepAwake();
+          if (cfg.onComplete === "sleep") {
+            triggerSleep();
+          } else if (cfg.onComplete === "shutdown") {
+            triggerShutdown();
+          }
+        }
+      };
+      q.on("completed", onCompleted);
+
       // Crash-boot breaker: a marker left behind by the previous boot means it
       // died mid-restore, so this one restores everything paused with the
       // engine cold (safe mode) instead of walking into the same explosion.
@@ -204,10 +230,13 @@ export function App({
           ? await magnetFromTorrentFile(initialTorrent)
           : null;
       if (launch) {
-        await fs.mkdir(cfg.downloadDir, { recursive: true }).catch(() => {});
+        const targetDir = resolveDownloadDir(cfg.downloadDir, {
+          categorySubfolders: cfg.categorySubfolders ?? true,
+        });
+        await fs.mkdir(targetDir, { recursive: true }).catch(() => {});
         q.add(
           { id: launch.infoHash, name: launch.name, magnet: launch.magnet },
-          cfg.downloadDir,
+          targetDir,
         );
         setView("browser");
         setSection("downloads");
@@ -222,7 +251,7 @@ export function App({
   // Best-effort, once per launch, off the hot path: if a newer release exists,
   // surface a quiet banner. Any failure (offline, opt-out) just leaves it hidden.
   useEffect(() => {
-    if (process.env.TORLINK_NO_UPDATE_CHECK) return;
+    if (process.env.TORHUNT_NO_UPDATE_CHECK) return;
     let alive = true;
     void (async () => {
       const latest = await fetchLatestVersion();
@@ -248,33 +277,8 @@ export function App({
     updatePowerState();
     queue.on("change", updatePowerState);
 
-    const onStarted = (name: string): void => {
-      if (config.notifyOnComplete ?? true) {
-        sendNotification("torhunt — Download Started", cleanText(name));
-      }
-    };
-    queue.on("started", onStarted);
-
-    const onCompleted = (name: string): void => {
-      setNotice(`${ICON.done} ${truncate(cleanText(name), 40)}`);
-      if (config.notifyOnComplete ?? true) {
-        sendNotification("torhunt — Download Complete", cleanText(name));
-      }
-      if (queue.activeCount === 0 && queue.getItems().length === 0) {
-        releaseKeepAwake();
-        if (config.onComplete === "sleep") {
-          triggerSleep();
-        } else if (config.onComplete === "shutdown") {
-          triggerShutdown();
-        }
-      }
-    };
-    queue.on("completed", onCompleted);
-
     return () => {
       queue.off("change", updatePowerState);
-      queue.off("started", onStarted);
-      queue.off("completed", onCompleted);
       releaseKeepAwake();
     };
   }, [queue, config]);
@@ -397,8 +401,12 @@ export function App({
       sizeBytes?: number;
     }) => {
       if (!config || !queue) return;
-      void fs.mkdir(config.downloadDir, { recursive: true }).catch(() => {});
-      queue.add(input, config.downloadDir);
+      const targetDir = resolveDownloadDir(config.downloadDir, {
+        source: input.source,
+        categorySubfolders: config.categorySubfolders ?? true,
+      });
+      void fs.mkdir(targetDir, { recursive: true }).catch(() => {});
+      queue.add(input, targetDir);
       setNotice(`Added: ${truncate(cleanText(input.name), 40)}`);
       setSection("downloads");
       setRegion("content");
@@ -427,8 +435,12 @@ export function App({
     (raw: string) => {
       const input = pendingDownload;
       setPendingDownload(null);
-      const dir = normalizeDownloadDir(raw);
-      if (!queue || !input || !dir) return;
+      const baseDir = normalizeDownloadDir(raw);
+      if (!queue || !input || !baseDir || !config) return;
+      const targetDir = resolveDownloadDir(baseDir, {
+        source: input.source,
+        categorySubfolders: config.categorySubfolders ?? true,
+      });
       // add() ignores the dir for anything already active, so don't claim a
       // folder that won't be used. Failed items fall through: a re-add with a
       // fresh dir is exactly how a bad-disk download gets redirected.
@@ -439,19 +451,19 @@ export function App({
       }
       void (async () => {
         try {
-          await fs.mkdir(dir, { recursive: true });
+          await fs.mkdir(targetDir, { recursive: true });
         } catch {
-          setNotice(`Couldn't use folder: ${truncate(dir, 48)}`);
+          setNotice(`Couldn't use folder: ${truncate(targetDir, 48)}`);
           return;
         }
-        setLastDownloadToDir(dir);
-        queue.add(input, dir);
-        setNotice(`Added: ${truncate(cleanText(input.name), 28)} → ${truncate(dir, 36)}`);
+        setLastDownloadToDir(targetDir);
+        queue.add(input, targetDir);
+        setNotice(`Added: ${truncate(cleanText(input.name), 28)} → ${truncate(targetDir, 36)}`);
         setSection("downloads");
         setRegion("content");
       })();
     },
-    [queue, pendingDownload],
+    [queue, pendingDownload, config],
   );
 
   const copyMagnet = useCallback((input: { name: string; magnet: string }) => {
@@ -649,7 +661,8 @@ export function App({
         editingTrackers ||
         editingTheme ||
         editingSpinner ||
-        pendingDownload
+        pendingDownload ||
+        qrModalItem
           ? "help"
           : region,
       setRegion,
@@ -672,6 +685,7 @@ export function App({
       openThemePicker: () => setEditingTheme(true),
       openSpinnerPicker: () => setEditingSpinner(true),
       openFolderPicker: () => setEditingFolder(true),
+      openQrModal: (item: { name: string; magnet: string }) => setQrModalItem(item),
       searchModeTrigger,
       triggerSearch,
       bookmarks,
@@ -794,6 +808,10 @@ export function App({
       }
       if (key.escape) {
         if (captureMode === "esc") return;
+        if (qrModalItem) {
+          setQrModalItem(null);
+          return;
+        }
         if (region === "content") {
           setRegion("sidebar");
           return;
@@ -921,6 +939,21 @@ export function App({
           </Box>
         ) : null}
 
+        {qrModalItem ? (
+          <Box marginTop={1}>
+            <QrModal
+              width={ruleWidth}
+              name={qrModalItem.name}
+              magnet={qrModalItem.magnet}
+              onClose={() => setQrModalItem(null)}
+              onCopy={() => {
+                writeClipboard(qrModalItem.magnet);
+                setNotice("✓ Copied magnet link to clipboard");
+              }}
+            />
+          </Box>
+        ) : null}
+
         <Box
           height={bodyH}
           marginTop={compact ? 0 : 1}
@@ -930,7 +963,8 @@ export function App({
             editingTrackers ||
             editingTheme ||
             editingSpinner ||
-            pendingDownload
+            pendingDownload ||
+            qrModalItem
               ? "none"
               : "flex"
           }

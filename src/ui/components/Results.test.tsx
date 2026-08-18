@@ -63,7 +63,7 @@ async function mount(results: TorrentResult[] = LIST): Promise<RenderedUI> {
     </StoreContext.Provider>,
   );
   const u = ui;
-  await vi.waitFor(() => expect(u.frame()).toContain(`RESULTS (${results.length})`));
+  await vi.waitFor(() => expect(u.frame()).toContain(`RESULTS - ${results.length}`));
   return u;
 }
 
@@ -80,7 +80,7 @@ async function openFilter(u: RenderedUI): Promise<void> {
 
 async function type(u: RenderedUI, text: string, expectCount: number): Promise<void> {
   u.press(text);
-  await vi.waitFor(() => expect(u.frame()).toContain(`(${expectCount})`));
+  await vi.waitFor(() => expect(u.frame()).toContain(`- ${expectCount}`));
 }
 
 describe("Results filter UI", () => {
@@ -101,7 +101,7 @@ describe("Results filter UI", () => {
 
     // The bug this guards against: the bar rendered as a row sibling of the
     // panel, landing on the top border line and squeezing the title.
-    expect(ls[top]).toContain("RESULTS (3)");
+    expect(ls[top]).toContain("RESULTS - 3");
     expect(ls[top]).toHaveLength(TEST_CONTENT_WIDTH);
     expect(bar).toBeGreaterThan(lastBorder);
     for (const l of ls) expect(l.length).toBeLessThanOrEqual(TEST_CONTENT_WIDTH);
@@ -144,7 +144,7 @@ describe("Results filter UI", () => {
     u.press(KEY.esc);
     await vi.waitFor(() => expect(editing(u)).toBe(false));
     expect(u.frame()).toContain("FILTER → iso");
-    expect(u.frame()).toContain("(6)");
+    expect(u.frame()).toContain("- 6");
 
     u.press("j");
     await vi.waitFor(() => {
@@ -158,10 +158,10 @@ describe("Results filter UI", () => {
     await openFilter(u);
     await type(u, "arch", 1);
     u.press(KEY.ctrlU);
-    await vi.waitFor(() => expect(u.frame()).toContain("(8)"));
+    await vi.waitFor(() => expect(u.frame()).toContain("- 8"));
     u.press(KEY.enter);
     await vi.waitFor(() => expect(u.frame()).not.toContain("FILTER"));
-    expect(u.frame()).toContain("RESULTS (8)");
+    expect(u.frame()).toContain("RESULTS - 8");
   });
 
   it("a zero-match filter never traps the user", async () => {
@@ -179,9 +179,9 @@ describe("Results filter UI", () => {
     // Wait between keys: TextField's input closure only refreshes on render,
     // so a same-batch ctrl+u + enter would still submit the pre-clear value
     // (pre-existing TextField trait, logged as a follow-up).
-    await vi.waitFor(() => expect(u.frame()).toContain("RESULTS (8)"));
+    await vi.waitFor(() => expect(u.frame()).toContain("RESULTS - 8"));
     u.press(KEY.enter);
     await vi.waitFor(() => expect(u.frame()).not.toContain("FILTER"));
-    expect(u.frame()).toContain("RESULTS (8)");
+    expect(u.frame()).toContain("RESULTS - 8");
   });
 });

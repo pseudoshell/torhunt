@@ -39,7 +39,7 @@ if (cmd.kind === "attach") {
 
 // Headless subcommands: run the download queue with no terminal UI (for
 // seedboxes and servers). Kept above the alt-screen setup below — these paths
-// never touch the TUI. Each is dynamically imported so a plain `torlnk` launch
+// never touch the TUI. Each is dynamically imported so a plain `torhunt` launch
 // pays nothing for them.
 function failHeadless(err: unknown): never {
   console.error(err instanceof Error ? err.message : String(err));
@@ -59,7 +59,7 @@ if (cmd.kind === "update") {
   const options = {
     port: cmd.port,
     host: cmd.host,
-    token: cmd.token ?? process.env.TORLINK_API_TOKEN,
+    token: cmd.token ?? process.env.TORHUNT_API_TOKEN,
     downloadDir: cmd.downloadDir,
     seedTimeMs: cmd.seedTimeMs,
     deleteFiles: cmd.deleteFiles,
@@ -70,7 +70,7 @@ if (cmd.kind === "update") {
   const options = {
     port: cmd.port,
     host: cmd.host,
-    token: cmd.token ?? process.env.TORLINK_FILES_TOKEN,
+    token: cmd.token ?? process.env.TORHUNT_FILES_TOKEN,
     dir: cmd.dir,
   };
   void import("./daemon/files").then(({ runFiles }) => runFiles(options).catch(failHeadless));

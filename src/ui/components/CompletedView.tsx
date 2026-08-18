@@ -127,7 +127,7 @@ export function CompletedView() {
       title="completed downloads"
       width={contentWidth}
       focused={focused}
-      count={`(${total})`}
+      count={total > 0 ? `- ${total}` : undefined}
       height={panelH}
     >
       <Box justifyContent="space-between" alignItems="center">
@@ -144,11 +144,12 @@ export function CompletedView() {
       <Box flexDirection="column" marginTop={1}>
         {visibleLines.map((row, i) => {
           if (row.type === "header") {
+            const prefix = `── ${row.title} `;
+            const rest = Math.max(0, contentWidth - 4 - prefix.length);
             return (
               <Box key={`h-${i}`} marginTop={i > 0 ? 1 : 0}>
-                <Text color={theme.colors.rule} bold>
-                  {`── ${row.title} ────────────────────────────────────────────────────────────`}
-                </Text>
+                <Text color={theme.colors.alt} dimColor bold>{prefix}</Text>
+                <Text color={theme.colors.rule}>{"─".repeat(rest)}</Text>
               </Box>
             );
           }
