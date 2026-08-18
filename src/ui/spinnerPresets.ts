@@ -42,6 +42,13 @@ export const SPINNERS: readonly SpinnerPreset[] = [
     frames: ["▰▱▱", "▰▰▱", "▰▰▰", "▱▰▰", "▱▱▰", "▱▱▱"],
     intervalMs: 100,
   },
+  {
+    id: "crt",
+    name: "CRT Scanline",
+    description: "Retro CRT monitor phosphor sweep",
+    frames: ["░▒▓█▓▒░", "▒▓█▓▒░░", "▓█▓▒░░░", "█▓▒░░░▓", "▓▒░░░▓█", "▒░░░▓█▓"],
+    intervalMs: 80,
+  },
 ] as const;
 
 export const DEFAULT_SPINNER = SPINNERS.find((s) => s.id === "meter") ?? SPINNERS[0]!;

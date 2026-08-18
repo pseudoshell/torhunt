@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Text, useInput } from "ink";
 
 export interface TextFieldProps {
@@ -86,12 +86,22 @@ export function TextField({
   const [value, setValue] = useState(defaultValue);
   const [cursor, setCursor] = useState(defaultValue.length);
   const [historyIdx, setHistoryIdx] = useState(-1);
+  const [cursorVisible, setCursorVisible] = useState(true);
   const draftRef = useRef(defaultValue);
+
+  useEffect(() => {
+    if (isDisabled) return;
+    const interval = setInterval(() => {
+      setCursorVisible((v) => !v);
+    }, 530);
+    return () => clearInterval(interval);
+  }, [isDisabled]);
 
   function apply(next: Edit): void {
     setHistoryIdx(-1);
     setValue(next.value);
     setCursor(Math.max(0, Math.min(next.value.length, next.cursor)));
+    setCursorVisible(true);
     if (next.value !== value) onChange?.(next.value);
   }
 
@@ -149,10 +159,12 @@ export function TextField({
       }
 
       if (key.home) {
+        setCursorVisible(true);
         setCursor(0);
         return;
       }
       if (key.end) {
+        setCursorVisible(true);
         setCursor(value.length);
         return;
       }
@@ -161,6 +173,7 @@ export function TextField({
       // named keys arrive with an empty input, so they'd hit its default arm
       // and vanish.
       if (key.leftArrow) {
+        setCursorVisible(true);
         if (key.ctrl || key.meta) {
           setCursor(wordLeft(value, cursor));
           return;
@@ -173,6 +186,7 @@ export function TextField({
         return;
       }
       if (key.rightArrow) {
+        setCursorVisible(true);
         if (key.ctrl || key.meta) {
           setCursor(wordRight(value, cursor));
           return;
@@ -201,9 +215,11 @@ export function TextField({
             apply(killToEnd(value, cursor));
             return;
           case "a":
+            setCursorVisible(true);
             setCursor(0);
             return;
           case "e":
+            setCursorVisible(true);
             setCursor(value.length);
             return;
           // Every other ctrl combo is swallowed so views behind the field
@@ -238,12 +254,16 @@ export function TextField({
     if (placeholder) {
       return (
         <Text>
-          <Text inverse>{placeholder[0]}</Text>
+          {cursorVisible ? (
+            <Text inverse>{placeholder[0]}</Text>
+          ) : (
+            <Text dimColor>{placeholder[0]}</Text>
+          )}
           <Text dimColor>{placeholder.slice(1)}</Text>
         </Text>
       );
     }
-    return <Text inverse>{CURSOR}</Text>;
+    return cursorVisible ? <Text inverse>{CURSOR}</Text> : <Text>{CURSOR}</Text>;
   }
 
   // Compute a viewport window that keeps the cursor visible.
@@ -267,7 +287,7 @@ export function TextField({
   return (
     <Text>
       {before}
-      <Text inverse>{atChar}</Text>
+      {cursorVisible ? <Text inverse>{atChar}</Text> : <Text>{atChar}</Text>}
       {after}
     </Text>
   );

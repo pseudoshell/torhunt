@@ -11,6 +11,7 @@ export interface Config {
   spinner: string;
   preventSleep: boolean;
   onComplete: OnCompleteAction;
+  notifyOnComplete: boolean;
 }
 
 export const defaultConfig: Config = {
@@ -20,6 +21,7 @@ export const defaultConfig: Config = {
   spinner: "meter",
   preventSleep: true,
   onComplete: "none",
+  notifyOnComplete: true,
 };
 
 export async function loadConfig(): Promise<Config> {
@@ -52,6 +54,10 @@ export async function loadConfig(): Promise<Config> {
         parsed.onComplete === "sleep" || parsed.onComplete === "shutdown" || parsed.onComplete === "none"
           ? parsed.onComplete
           : defaultConfig.onComplete,
+      notifyOnComplete:
+        typeof parsed.notifyOnComplete === "boolean"
+          ? parsed.notifyOnComplete
+          : defaultConfig.notifyOnComplete,
     };
     return cfg;
   } catch {

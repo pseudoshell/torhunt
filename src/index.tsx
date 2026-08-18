@@ -74,6 +74,12 @@ if (cmd.kind === "update") {
     dir: cmd.dir,
   };
   void import("./daemon/files").then(({ runFiles }) => runFiles(options).catch(failHeadless));
+} else if (cmd.kind === "notify-test") {
+  void import("./util/notify").then(({ sendNotification }) => {
+    sendNotification("torhunt — Test Notification", "Desktop notifications are working cleanly!");
+    console.log("✔ Notification test dispatched to your OS.");
+    process.exit(0);
+  });
 } else {
 
 // Enter the alt-screen and hide the hardware cursor: the TUI draws its own

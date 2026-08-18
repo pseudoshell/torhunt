@@ -38,6 +38,7 @@ export function SettingsView() {
     { id: "theme", label: "Color Theme" },
     { id: "spinner", label: "Spinner Loader" },
     { id: "preventSleep", label: "Stay Awake" },
+    { id: "notifyOnComplete", label: "Desktop Alerts" },
     { id: "onComplete", label: "When Finished" },
   ];
 
@@ -47,6 +48,14 @@ export function SettingsView() {
     setConfig(nextCfg);
     saveConfig(nextCfg);
     setNotice(nextVal ? "Stay Awake enabled: OS will not sleep while downloading" : "Stay Awake disabled: Standard OS sleep enabled");
+  };
+
+  const toggleNotifyOnComplete = () => {
+    const nextVal = !(config.notifyOnComplete ?? true);
+    const nextCfg = { ...config, notifyOnComplete: nextVal };
+    setConfig(nextCfg);
+    saveConfig(nextCfg);
+    setNotice(nextVal ? "Desktop Alerts enabled: OS notification when download completes" : "Desktop Alerts disabled");
   };
 
   const cycleOnComplete = () => {
@@ -92,6 +101,8 @@ export function SettingsView() {
           openSpinnerPicker();
         } else if (item?.id === "preventSleep") {
           togglePreventSleep();
+        } else if (item?.id === "notifyOnComplete") {
+          toggleNotifyOnComplete();
         } else if (item?.id === "onComplete") {
           cycleOnComplete();
         }
@@ -180,11 +191,25 @@ export function SettingsView() {
             </Box>
           </Box>
 
-          {/* Item 4: On Complete */}
+          {/* Item 4: Desktop Alerts */}
           <Box justifyContent="space-between" alignItems="center">
             <Box>
               <Text color={selectedIdx === 4 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 4 && focused}>
-                {selectedIdx === 4 && focused ? "→ " : "  "}On Queue Finish:
+                {selectedIdx === 4 && focused ? "→ " : "  "}Desktop Alerts:
+              </Text>
+            </Box>
+            <Box marginLeft={2}>
+              <Text color={(config.notifyOnComplete ?? true) ? theme.colors.good : theme.colors.alt} bold>
+                {(config.notifyOnComplete ?? true) ? "[Enabled]" : "[Disabled]"}
+              </Text>
+            </Box>
+          </Box>
+
+          {/* Item 5: On Complete */}
+          <Box justifyContent="space-between" alignItems="center">
+            <Box>
+              <Text color={selectedIdx === 5 && focused ? theme.colors.bright : undefined} bold={selectedIdx === 5 && focused}>
+                {selectedIdx === 5 && focused ? "→ " : "  "}On Queue Finish:
               </Text>
             </Box>
             <Box marginLeft={2}>
@@ -209,7 +234,7 @@ export function SettingsView() {
 
           <Box marginTop={1}>
             <Text dimColor>
-              Press ↵ to edit folder, pick theme/spinner, toggle stay awake, or cycle finish action.
+              Press ↵ to edit folder, pick theme/spinner, toggle stay awake/alerts, or cycle finish action.
             </Text>
           </Box>
         </Box>

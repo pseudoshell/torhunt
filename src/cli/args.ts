@@ -26,6 +26,7 @@ export type CliCommand =
   | { kind: "files"; port?: number; host?: string; token?: string; dir?: string; daemon?: boolean }
   | { kind: "attach" }
   | { kind: "update"; force?: boolean }
+  | { kind: "notify-test" }
   | { kind: "invalid"; arg: string };
 
 // Valueless boolean flags for the headless subcommands (everything else is a
@@ -76,6 +77,7 @@ export function parseCliArgs(argv: string[]): CliCommand {
   if (a === "--version" || a === "-v") return { kind: "version" };
   if (a === "--help" || a === "-h") return { kind: "help" };
   if (a === "attach") return { kind: "attach" };
+  if (a === "notify-test" || a === "--notify-test") return { kind: "notify-test" };
   if (a === "update") return { kind: "update", force: args.slice(1).includes("--force") };
   if (a === "watch") {
     const { bools, rest: r0 } = splitBooleans(args.slice(1));
@@ -135,6 +137,7 @@ usage
   torhunt attach               open/reattach the TUI in a persistent tmux session
   torhunt update [--force]     update to the latest release and restart any daemon
                               (--force rebuilds/restarts even if already current)
+  torhunt notify-test          test native OS desktop notifications
   torhunt --version            print the version
   torhunt --help               print this help message
 

@@ -32,6 +32,7 @@ import {
   triggerSleep,
   triggerShutdown,
 } from "../util/power";
+import { sendNotification } from "../util/notify";
 import {
   StoreContext,
   type CaptureMode,
@@ -247,8 +248,18 @@ export function App({
     updatePowerState();
     queue.on("change", updatePowerState);
 
+    const onStarted = (name: string): void => {
+      if (config.notifyOnComplete ?? true) {
+        sendNotification("torhunt — Download Started", cleanText(name));
+      }
+    };
+    queue.on("started", onStarted);
+
     const onCompleted = (name: string): void => {
       setNotice(`${ICON.done} ${truncate(cleanText(name), 40)}`);
+      if (config.notifyOnComplete ?? true) {
+        sendNotification("torhunt — Download Complete", cleanText(name));
+      }
       if (queue.activeCount === 0 && queue.getItems().length === 0) {
         releaseKeepAwake();
         if (config.onComplete === "sleep") {
@@ -262,6 +273,7 @@ export function App({
 
     return () => {
       queue.off("change", updatePowerState);
+      queue.off("started", onStarted);
       queue.off("completed", onCompleted);
       releaseKeepAwake();
     };
