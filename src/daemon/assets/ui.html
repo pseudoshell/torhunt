@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>torhunt · remote</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   /* Design tokens mirror the TUI's default "Electric Cyan" theme (src/ui/theme.ts). */
   :root {
@@ -22,18 +25,30 @@
     --shade-deep: #02182b;
     --card: #06304f;
     --card-edge: rgba(0, 229, 255, 0.14);
-    --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   html, body { height: 100%; }
 
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 99px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  :root { scrollbar-color: var(--rule) transparent; }
+
   body {
     font-family: var(--mono);
     background:
       radial-gradient(1200px 500px at 50% -10%, rgba(0, 119, 182, 0.25), transparent 60%),
       linear-gradient(180deg, var(--shade) 0%, var(--shade-deep) 100%);
+    /* The gradients must not tile: without no-repeat the glow repeats every
+       1200x500px tile, which reads as duplicated background blocks while
+       scrolling. Fixed attachment anchors the glow to the viewport instead of
+       the document, so it never scrolls away or stacks. */
+    background-repeat: no-repeat, no-repeat;
+    background-attachment: fixed, fixed;
+    background-color: var(--shade-deep);
     color: var(--text);
     min-height: 100%;
     padding-bottom: 48px;
@@ -272,11 +287,22 @@
 
   .row + .row { border-top: 1px solid rgba(30, 77, 97, 0.45); }
 
-  .row-top { display: flex; align-items: center; gap: 10px; }
+  .row-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    /* A flex container never widens its parent: without an explicit min-width
+       floor, a long nowrap child can push the row past the panel edge and clip
+       the action buttons (seen on long release names). */
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: nowrap;
+  }
 
   .name {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
+    max-width: 100%;
     font-size: 13px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -300,6 +326,7 @@
   .chip.failed      { color: var(--bad);    border-color: var(--bad); }
   .chip.seeding     { color: var(--good);   border-color: var(--good); }
   .chip.missing     { color: var(--bad);    border-color: var(--bad); }
+  .chip.done        { color: var(--alt);    border-color: var(--rule); }
 
   .meter {
     height: 7px;
@@ -331,9 +358,15 @@
   .meta .bad  { color: var(--bad); }
   .meta .warn { color: var(--warn); }
 
-  .actions { display: flex; gap: 7px; justify-content: flex-end; }
+  .actions {
+    display: flex;
+    gap: 7px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
 
   .actions button {
+    flex: none;
     font-size: 10.5px;
     font-weight: 700;
     letter-spacing: 0.5px;
@@ -720,7 +753,7 @@ function renderHistory() {
   }
   el.innerHTML = items.map((h) => `
     <div class="row">
-      <div class="row-top"><span class="name" title="${esc(h.name)}">${esc(h.name)}</span>${chip("seeding" === (state.seeds.find((x) => x.id === h.id) ?? {}).status ? "seeding" : "paused")}</div>
+      <div class="row-top"><span class="name" title="${esc(h.name)}">${esc(h.name)}</span>${chip("done")}</div>
       <div class="meta">
         ${h.sizeBytes ? `<span>${fmtBytes(h.sizeBytes)}</span>` : ""}
         <span>finished ${fmtAgo(h.completedAt)}</span>
