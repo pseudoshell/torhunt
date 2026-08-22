@@ -11,6 +11,7 @@ import http from "node:http";
 import { startRuntime, addInput, type Runtime } from "./runtime";
 import { startSeedReaper } from "./seed-reaper";
 import { LOOPBACK_HOSTS, isAuthorized, hostHeaderOk } from "./auth";
+import { loadUiHtml, openEventStream, originAllowed } from "./webui";
 import { VERSION } from "../version";
 
 export { isAuthorized } from "./auth";
@@ -136,6 +137,11 @@ function statusPayload(runtime: Runtime): Record<string, unknown> {
     progress: it.progress,
     peers: it.peers,
     speed: it.speed,
+    // Extra context for the web remote; additive so existing API consumers
+    // that only read the original fields keep working untouched.
+    totalBytes: it.totalBytes,
+    downloadedBytes: it.downloadedBytes,
+    eta: it.eta,
   }));
   const seeds = runtime.queue.getSeeds().map((s) => ({
     id: s.id,
@@ -145,6 +151,18 @@ function statusPayload(runtime: Runtime): Record<string, unknown> {
     uploaded: s.uploaded,
   }));
   return { downloads, seeds };
+}
+
+// Completed-download archive for the web remote's Completed tab. Read-only and
+// capped by whatever the queue keeps (HISTORY_MAX), so the payload stays small.
+function historyPayload(runtime: Runtime): Record<string, unknown> {
+  const history = runtime.queue.getHistory().map((h) => ({
+    id: h.id,
+    name: h.name,
+    sizeBytes: h.sizeBytes,
+    completedAt: h.completedAt,
+  }));
+  return { history };
 }
 
 // Pure request router — no node:http types, so it's trivially testable.
@@ -164,6 +182,9 @@ export async function handleApi(
   }
   if (method === "GET" && (urlPath === "/downloads" || urlPath === "/status")) {
     return { status: 200, body: statusPayload(runtime) };
+  }
+  if (method === "GET" && urlPath === "/history") {
+    return { status: 200, body: historyPayload(runtime) };
   }
   if (method === "POST" && urlPath === "/add") {
     const magnet = extractMagnet(bodyText);
@@ -220,6 +241,90 @@ function log(message: string): void {
   console.log(`[torhunt serve] ${new Date().toISOString()} ${message}`);
 }
 
+// Build the request handler for the headless add API. Split out from runServe
+// so tests can spin a real server against a fake runtime.
+export function createServeHandler(
+  runtime: Runtime,
+  token: string | null,
+  logFn: (message: string) => void = log,
+): (req: http.IncomingMessage, res: http.ServerResponse) => void {
+  return (req, res) => {
+    void (async () => {
+      const method = req.method ?? "GET";
+      const url = new URL(req.url ?? "/", "http://localhost");
+      const urlPath = url.pathname;
+      // Tokenless means loopback-bound; require a loopback Host so a hostile
+      // webpage can't reach us through DNS rebinding.
+      if (!token && !hostHeaderOk(req.headers.host)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "forbidden host" }));
+        logFn(`${method} ${urlPath} -> 403 (host)`);
+        return;
+      }
+      // Web remote shell. Like /health it carries no secrets — data stays
+      // behind auth below — so any browser that passes the Host check gets it.
+      if (method === "GET" && (urlPath === "/" || urlPath === "/ui")) {
+        const html = loadUiHtml();
+        if (html === null) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "web ui not bundled" }));
+          return;
+        }
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+        res.end(html);
+        return;
+      }
+      // Live snapshot stream. EventSource can't set headers, so the token is
+      // also accepted as a query parameter here (never on JSON routes).
+      if (method === "GET" && urlPath === "/events") {
+        const queryToken = url.searchParams.get("token");
+        const auth =
+          req.headers.authorization ?? (queryToken ? `Bearer ${queryToken}` : undefined);
+        if (!isAuthorized(token, auth)) {
+          res.writeHead(401, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "unauthorized" }));
+          logFn(`GET /events -> 401`);
+          return;
+        }
+        openEventStream(res, runtime.queue, () => statusPayload(runtime));
+        logFn("event stream attached");
+        return;
+      }
+      // Browsers attach Origin to every POST they send; cross-site ones don't
+      // match our Host. curl and scripts send no Origin and pass untouched.
+      // This keeps the JSON API un-forgeable from hostile web pages even in
+      // tokenless mode (where parsers alone already reject form encodings).
+      if (method !== "GET" && method !== "HEAD" && !originAllowed(req.headers.origin, req.headers.host)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "cross-origin request rejected" }));
+        logFn(`${method} ${urlPath} -> 403 (origin)`);
+        return;
+      }
+      const body = method === "POST" ? await readBody(req) : { text: "", tooLarge: false };
+      if (body.tooLarge) {
+        res.writeHead(413, { "Content-Type": "application/json", Connection: "close" });
+        res.end(JSON.stringify({ error: "body too large" }));
+        res.once("finish", () => req.destroy());
+        logFn(`${method} ${urlPath} -> 413`);
+        return;
+      }
+      const bodyText = body.text;
+      let out: ApiResponse;
+      try {
+        out = await handleApi(runtime, token, method, urlPath, req.headers.authorization, bodyText);
+      } catch {
+        out = { status: 500, body: { error: "internal error" } };
+      }
+      const payload = JSON.stringify(out.body);
+      res.writeHead(out.status, { "Content-Type": "application/json" });
+      res.end(payload);
+      if (method !== "GET" || urlPath !== "/health") {
+        logFn(`${method} ${urlPath} -> ${out.status}`);
+      }
+    })();
+  };
+}
+
 export async function runServe(options: ServeOptions = {}): Promise<void> {
   const port = options.port ?? DEFAULT_API_PORT;
   const host = options.host ?? "127.0.0.1";
@@ -241,41 +346,7 @@ export async function runServe(options: ServeOptions = {}): Promise<void> {
     startSeedReaper(runtime.queue, options.seedTimeMs, { deleteFiles: options.deleteFiles, log });
   }
 
-  const server = http.createServer((req, res) => {
-    void (async () => {
-      const method = req.method ?? "GET";
-      const urlPath = (req.url ?? "/").split("?")[0]!;
-      // Tokenless means loopback-bound; require a loopback Host so a hostile
-      // webpage can't reach us through DNS rebinding.
-      if (!token && !hostHeaderOk(req.headers.host)) {
-        res.writeHead(403, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "forbidden host" }));
-        log(`${method} ${urlPath} -> 403 (host)`);
-        return;
-      }
-      const body = method === "POST" ? await readBody(req) : { text: "", tooLarge: false };
-      if (body.tooLarge) {
-        res.writeHead(413, { "Content-Type": "application/json", Connection: "close" });
-        res.end(JSON.stringify({ error: "body too large" }));
-        res.once("finish", () => req.destroy());
-        log(`${method} ${urlPath} -> 413`);
-        return;
-      }
-      const bodyText = body.text;
-      let out: ApiResponse;
-      try {
-        out = await handleApi(runtime, token, method, urlPath, req.headers.authorization, bodyText);
-      } catch {
-        out = { status: 500, body: { error: "internal error" } };
-      }
-      const payload = JSON.stringify(out.body);
-      res.writeHead(out.status, { "Content-Type": "application/json" });
-      res.end(payload);
-      if (method !== "GET" || urlPath !== "/health") {
-        log(`${method} ${urlPath} -> ${out.status}`);
-      }
-    })();
-  });
+  const server = http.createServer(createServeHandler(runtime, token));
 
   await new Promise<void>((resolve) => {
     server.listen(port, host, () => {

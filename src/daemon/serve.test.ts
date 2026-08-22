@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import os from "node:os";
 import path from "node:path";
+import http from "node:http";
+import { AddressInfo } from "node:net";
+import { EventEmitter } from "node:events";
 import { promises as fs } from "node:fs";
-import { handleApi, isAuthorized, extractMagnet, parseControl, applyControl } from "./serve";
+import { handleApi, isAuthorized, extractMagnet, parseControl, applyControl, createServeHandler } from "./serve";
 import type { Runtime } from "./runtime";
 
 const HASH = "abcdef0123456789abcdef0123456789abcdef01";
@@ -126,6 +129,144 @@ describe("handleApi", () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ ok: true, action: "pause" });
     expect(pause).toHaveBeenCalledWith(HASH);
+  });
+
+  it("lists history on GET /history", async () => {
+    const completedAt = Date.now();
+    runtime.queue = {
+      getItems: () => [],
+      getSeeds: () => [],
+      getHistory: () => [{ id: HASH, name: "Done", sizeBytes: 1234, completedAt }],
+    } as unknown as Runtime["queue"];
+    const res = await handleApi(runtime, null, "GET", "/history", undefined, "");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      history: [{ id: HASH, name: "Done", sizeBytes: 1234, completedAt }],
+    });
+  });
+});
+
+describe("createServeHandler (web remote routes)", () => {
+  let server: http.Server;
+
+  function fakeQueue(overrides: Record<string, unknown> = {}): Runtime["queue"] {
+    const emitter = new EventEmitter();
+    return Object.assign(emitter, {
+      getItems: () => [],
+      getSeeds: () => [],
+      getHistory: () => [],
+      has: () => false,
+      add: vi.fn(),
+      ...overrides,
+    }) as unknown as Runtime["queue"];
+  }
+
+  function start(token: string | null, queue: Runtime["queue"]): Promise<string> {
+    const runtime = { queue, downloadDir: "unused" } as unknown as Runtime;
+    server = http.createServer(createServeHandler(runtime, token, () => {}));
+    return new Promise((resolve) => {
+      server.listen(0, "127.0.0.1", () =>
+        resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`),
+      );
+    });
+  }
+
+  afterEach(async () => {
+    if (!server) return;
+    server.closeAllConnections?.();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    server = undefined as unknown as http.Server;
+  });
+
+  it("serves the web remote shell on /", async () => {
+    const base = await start(null, fakeQueue());
+    const res = await fetch(`${base}/`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/html");
+    const html = await res.text();
+    expect(html).toContain("<!DOCTYPE html");
+    expect(html).toContain("torhunt");
+  });
+
+  it("serves the shell on /ui as well", async () => {
+    const base = await start(null, fakeQueue());
+    const res = await fetch(`${base}/ui`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("<!DOCTYPE html");
+  });
+
+  it("streams snapshots on /events without a token", async () => {
+    const base = await start(null, fakeQueue());
+    const controller = new AbortController();
+    const res = await fetch(`${base}/events`, { signal: controller.signal });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/event-stream");
+    const reader = res.body!.getReader()!;
+    const { value } = await reader.read();
+    const text = new TextDecoder().decode(value);
+    expect(text).toContain("retry:");
+    expect(text).toContain('"downloads"');
+    controller.abort();
+  });
+
+  it("401s /events with a wrong token", async () => {
+    const base = await start("tok", fakeQueue());
+    const res = await fetch(`${base}/events?token=nope`);
+    expect(res.status).toBe(401);
+  });
+
+  it("accepts the correct token via query for /events", async () => {
+    const base = await start("tok", fakeQueue());
+    const controller = new AbortController();
+    const res = await fetch(`${base}/events?token=tok`, { signal: controller.signal });
+    expect(res.status).toBe(200);
+    controller.abort();
+  });
+
+  it("rejects cross-site POSTs by origin", async () => {
+    const base = await start(null, fakeQueue());
+    const res = await fetch(`${base}/add`, {
+      method: "POST",
+      headers: { Origin: "http://evil.example", "Content-Type": "application/json" },
+      body: JSON.stringify({ magnet: MAGNET }),
+    });
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { error: string }).error).toContain("cross-origin");
+  });
+
+  it("lets same-origin POSTs through to the API", async () => {
+    const add = vi.fn();
+    const base = await start(null, fakeQueue({ add }));
+    const res = await fetch(`${base}/add`, {
+      method: "POST",
+      headers: { Origin: base, "Content-Type": "application/json" },
+      body: JSON.stringify({ magnet: MAGNET }),
+    });
+    expect(res.status).toBe(200);
+    expect(add).toHaveBeenCalled();
+  });
+
+  it("keeps plain curl POSTs working (no Origin header)", async () => {
+    const add = vi.fn();
+    const base = await start(null, fakeQueue({ add }));
+    const res = await fetch(`${base}/add`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ magnet: MAGNET }),
+    });
+    expect(res.status).toBe(200);
+    expect(add).toHaveBeenCalled();
+  });
+
+  it("exposes history over HTTP for the Completed tab", async () => {
+    const completedAt = Date.now();
+    const base = await start(
+      null,
+      fakeQueue({ getHistory: () => [{ id: HASH, name: "Done", sizeBytes: 99, completedAt }] }),
+    );
+    const res = await fetch(`${base}/history`);
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { history: unknown[] }).history).toHaveLength(1);
   });
 });
 

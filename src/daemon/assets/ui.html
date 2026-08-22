@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>torhunt · remote</title>
+<style>
+  /* Design tokens mirror the TUI's default "Electric Cyan" theme (src/ui/theme.ts). */
+  :root {
+    --accent: #00e5ff;
+    --accent-dim: #00b4d8;
+    --text: #e6f9ff;
+    --alt: #7fc6e8;
+    --good: #00ff9d;
+    --warn: #ffd166;
+    --bad: #ff3864;
+    --bright: #80f4ff;
+    --rule: #1e4d61;
+    --paused: #52798e;
+    --base: #0077b6;
+    --shade: #032845;
+    --shade-deep: #02182b;
+    --card: #06304f;
+    --card-edge: rgba(0, 229, 255, 0.14);
+    --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: var(--mono);
+    background:
+      radial-gradient(1200px 500px at 50% -10%, rgba(0, 119, 182, 0.25), transparent 60%),
+      linear-gradient(180deg, var(--shade) 0%, var(--shade-deep) 100%);
+    color: var(--text);
+    min-height: 100%;
+    padding-bottom: 48px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: rgba(0, 229, 255, 0.35); }
+
+  /* ---------- header ---------- */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background: rgba(2, 24, 43, 0.88);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--card-edge);
+  }
+
+  .logo-mark {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    font-size: 18px;
+    color: var(--shade-deep);
+    background: linear-gradient(135deg, var(--bright), var(--accent));
+    box-shadow: 0 0 18px rgba(0, 229, 255, 0.45);
+    flex: none;
+  }
+
+  .title-block { flex: 1; min-width: 0; }
+
+  h1 {
+    font-size: 17px;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  h1 .dim { color: var(--alt); font-weight: 400; }
+
+  .subtitle {
+    font-size: 11px;
+    color: var(--paused);
+    letter-spacing: 0.4px;
+    margin-top: 1px;
+  }
+
+  .conn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    color: var(--paused);
+    letter-spacing: 0.5px;
+    flex: none;
+  }
+
+  .conn-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--bad);
+    transition: background 0.3s;
+  }
+
+  .conn.on .conn-dot {
+    background: var(--good);
+    box-shadow: 0 0 10px rgba(0, 255, 157, 0.7);
+    animation: pulse 2.2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 4px rgba(0, 255, 157, 0.4); }
+    50%      { box-shadow: 0 0 12px rgba(0, 255, 157, 0.9); }
+  }
+
+  main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 20px 16px 0;
+    display: grid;
+    gap: 16px;
+  }
+
+  /* ---------- shared card look ---------- */
+  .panel {
+    background: linear-gradient(180deg, rgba(0, 119, 182, 0.10), transparent 55%), var(--card);
+    border: 1px solid var(--card-edge);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .panel-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 12px 16px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--alt);
+    border-bottom: 1px solid var(--card-edge);
+  }
+
+  .panel-title .count {
+    margin-left: auto;
+    color: var(--paused);
+    font-weight: 400;
+  }
+</style>
+</head>
+<style>
+  /* ---------- add bar ---------- */
+  .add-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .add-row input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 13px;
+    color: var(--bright);
+    background: var(--shade-deep);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .add-row input::placeholder { color: var(--paused); }
+
+  .add-row input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.15);
+  }
+
+  button {
+    font: inherit;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    transition: filter 0.15s, transform 0.05s;
+  }
+
+  button:active { transform: translateY(1px); }
+
+  button.primary {
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    padding: 10px 18px;
+    color: var(--shade-deep);
+    background: linear-gradient(135deg, var(--bright), var(--accent));
+    box-shadow: 0 0 14px rgba(0, 229, 255, 0.30);
+  }
+
+  button.primary:hover { filter: brightness(1.1); }
+  button.primary:disabled { opacity: 0.45; cursor: default; filter: none; }
+
+  .hint {
+    padding: 0 14px 11px;
+    font-size: 10.5px;
+    color: var(--paused);
+    letter-spacing: 0.3px;
+  }
+
+  /* ---------- stats strip ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .stat {
+    text-align: center;
+    padding: 12px 6px;
+    background: linear-gradient(180deg, rgba(0, 119, 182, 0.10), transparent), var(--card);
+    border: 1px solid var(--card-edge);
+    border-radius: 12px;
+  }
+
+  .stat b {
+    display: block;
+    font-size: 19px;
+    color: var(--bright);
+    text-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
+  }
+
+  .stat span {
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--paused);
+  }
+
+  /* ---------- tabs ---------- */
+  nav.tabs { display: flex; gap: 4px; }
+
+  nav.tabs button {
+    flex: 1;
+    padding: 9px 4px;
+    font-size: 11px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--alt);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+  }
+
+  nav.tabs button.active {
+    color: var(--bright);
+    border-color: var(--card-edge);
+    background: var(--card);
+  }
+</style>
+<style>
+  /* ---------- torrent rows ---------- */
+  section.list { display: grid; gap: 0; }
+  section.list[hidden] { display: none; }
+
+  .row {
+    padding: 13px 16px 14px;
+    display: grid;
+    gap: 9px;
+  }
+
+  .row + .row { border-top: 1px solid rgba(30, 77, 97, 0.45); }
+
+  .row-top { display: flex; align-items: center; gap: 10px; }
+
+  .name {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .chip {
+    flex: none;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 99px;
+    border: 1px solid;
+  }
+
+  .chip.downloading { color: var(--accent); border-color: var(--accent); animation: pulse 2.2s infinite; }
+  .chip.queued      { color: var(--warn);   border-color: var(--warn); }
+  .chip.paused      { color: var(--paused); border-color: var(--paused); }
+  .chip.failed      { color: var(--bad);    border-color: var(--bad); }
+  .chip.seeding     { color: var(--good);   border-color: var(--good); }
+  .chip.missing     { color: var(--bad);    border-color: var(--bad); }
+
+  .meter {
+    height: 7px;
+    border-radius: 99px;
+    background: var(--shade-deep);
+    border: 1px solid rgba(30, 77, 97, 0.7);
+    overflow: hidden;
+  }
+
+  .meter i {
+    display: block;
+    height: 100%;
+    width: 0%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--base), var(--accent));
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+    transition: width 0.5s ease;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 16px;
+    font-size: 11px;
+    color: var(--alt);
+  }
+
+  .meta .good { color: var(--good); }
+  .meta .bad  { color: var(--bad); }
+  .meta .warn { color: var(--warn); }
+
+  .actions { display: flex; gap: 7px; justify-content: flex-end; }
+
+  .actions button {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 6px 12px;
+    color: var(--alt);
+    background: var(--shade-deep);
+    border: 1px solid var(--rule);
+  }
+
+  .actions button:hover { border-color: var(--accent); color: var(--bright); }
+
+  .actions button.danger { color: var(--bad); border-color: rgba(255, 56, 100, 0.4); }
+  .actions button.danger:hover,
+  .actions button.danger.confirm {
+    border-color: var(--bad);
+    box-shadow: 0 0 10px rgba(255, 56, 100, 0.25);
+  }
+
+  .actions button.danger.confirm { background: rgba(255, 56, 100, 0.18); color: #fff; }
+
+  .empty {
+    padding: 26px 16px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--paused);
+    line-height: 1.7;
+  }
+
+  footer {
+    max-width: 860px;
+    margin: 8px auto 0;
+    padding: 0 16px;
+    font-size: 10.5px;
+    color: var(--paused);
+    text-align: center;
+    letter-spacing: 0.4px;
+  }
+
+  /* ---------- toast ---------- */
+  #toast {
+    position: fixed;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%) translateY(20px);
+    max-width: 90vw;
+    padding: 10px 18px;
+    font-size: 12px;
+    border-radius: 9px;
+    background: var(--card);
+    border: 1px solid var(--card-edge);
+    color: var(--bright);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 40;
+  }
+
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.err { color: var(--bad); border-color: rgba(255, 56, 100, 0.5); }
+
+  /* ---------- token gate ---------- */
+  #gate {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(2, 24, 43, 0.92);
+    backdrop-filter: blur(6px);
+    z-index: 30;
+  }
+
+  #gate[hidden] { display: none; }
+
+  .gate-card {
+    width: min(380px, 88vw);
+    padding: 26px 24px;
+    text-align: center;
+    display: grid;
+    gap: 14px;
+    justify-items: stretch;
+  }
+
+  .gate-card h2 { font-size: 15px; letter-spacing: 0.5px; }
+  .gate-card p { font-size: 11.5px; color: var(--alt); line-height: 1.6; }
+
+  .gate-card input {
+    font: inherit;
+    font-size: 13px;
+    text-align: center;
+    color: var(--bright);
+    background: var(--shade-deep);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 10px 12px;
+    outline: none;
+  }
+
+  .gate-card input:focus { border-color: var(--accent); }
+
+  @media (max-width: 560px) {
+    header { padding: 12px 14px; }
+    .subtitle { display: none; }
+    .stats b { font-size: 16px; }
+    .row-top { flex-wrap: wrap; }
+    .name { flex-basis: 100%; order: -1; white-space: normal; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo-mark">⚡</div>
+  <div class="title-block">
+    <h1>torhunt <span class="dim">/ web remote</span></h1>
+    <div class="subtitle">headless download console</div>
+  </div>
+  <div class="conn" id="conn"><span class="conn-dot"></span><span id="conn-label">offline</span></div>
+</header>
+
+<main>
+  <div class="panel">
+    <div class="panel-title">add magnet or info hash</div>
+    <form class="add-row" id="add-form">
+      <input id="add-input" type="text" autocomplete="off" spellcheck="false"
+             placeholder="magnet:?xt=urn:btih:…  ·  40-char info hash">
+      <button class="primary" type="submit" id="add-btn">Add</button>
+    </form>
+    <div class="hint">downloads start immediately and resume on their own if the daemon restarts</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b id="st-active">–</b><span>downloading</span></div>
+    <div class="stat"><b id="st-speed">–</b><span>total speed</span></div>
+    <div class="stat"><b id="st-seeds">–</b><span>seeding</span></div>
+  </div>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="downloads" class="active">Downloads</button>
+    <button data-tab="seeding">Seeding</button>
+    <button data-tab="completed">Completed</button>
+  </nav>
+
+  <section class="list panel" id="sec-downloads"></section>
+  <section class="list panel" id="sec-seeding" hidden></section>
+  <section class="list panel" id="sec-completed" hidden></section>
+</main>
+
+<footer>torhunt web remote · talks only to your local daemon · nothing leaves this machine</footer>
+
+<div id="toast"></div>
+
+<div id="gate" hidden>
+  <div class="panel gate-card">
+    <h2>🔒 Token required</h2>
+    <p>This daemon requires an access token.<br>Start it with: <b>torhunt serve --token …</b></p>
+    <input id="gate-input" type="password" placeholder="access token">
+    <button class="primary" id="gate-save">Connect</button>
+  </div>
+</div>
+<script>
+"use strict";
+
+// ---- state -----------------------------------------------------------------
+const state = { downloads: [], seeds: [], history: [], tab: "downloads" };
+let token = localStorage.getItem("torhunt-token") || "";
+
+// ---- tiny helpers ----------------------------------------------------------
+const $ = (sel) => document.querySelector(sel);
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
+function fmtBytes(n) {
+  if (!Number.isFinite(n) || n <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+  return `${n >= 100 ? Math.round(n) : n.toFixed(1)} ${units[i]}`;
+}
+
+function fmtSpeed(bytesPerSec) {
+  return bytesPerSec > 0 ? `${fmtBytes(bytesPerSec)}/s` : "–";
+}
+
+function fmtEta(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "–";
+  if (seconds < 90) return `${Math.round(seconds)}s`;
+  const m = Math.round(seconds / 60);
+  if (m < 90) return `${m}m`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m`;
+}
+
+function fmtAgo(ms) {
+  const diff = Date.now() - ms;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return days === 1 ? "yesterday" : `${days}d ago`;
+}
+
+let toastTimer;
+function toast(message, isError) {
+  const el = $("#toast");
+  el.textContent = message;
+  el.classList.toggle("err", Boolean(isError));
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+}
+
+function setConnected(on, label) {
+  $("#conn").classList.toggle("on", on);
+  $("#conn-label").textContent = label ?? (on ? "live" : "offline");
+}
+
+// ---- api -------------------------------------------------------------------
+class ApiError extends Error {
+  constructor(status, message) { super(message); this.status = status; }
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    ...options,
+    headers: {
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  });
+  if (!res.ok) {
+    let message = `HTTP ${res.status}`;
+    try { message = (await res.json()).error ?? message; } catch {}
+    throw new ApiError(res.status, message);
+  }
+  return res.json();
+}
+
+function requireToken(err) {
+  if (err instanceof ApiError && err.status === 401) {
+    $("#gate").hidden = false;
+    $("#gate-input").focus();
+    return true;
+  }
+  return false;
+}
+</script>
+<script>
+"use strict";
+
+// ---- rendering -------------------------------------------------------------
+function chip(status) {
+  return `<span class="chip ${esc(status)}">${esc(status)}</span>`;
+}
+
+function renderDownloads() {
+  const el = $("#sec-downloads");
+  const items = state.downloads;
+  if (!items.length) {
+    el.innerHTML = `<div class="empty">no downloads yet<br>paste a magnet link or info hash above to begin</div>`;
+    return;
+  }
+  el.innerHTML = items.map((d) => {
+    const pct = Math.max(0, Math.min(100, d.progress ?? 0));
+    const meta = [];
+    meta.push(`<span class="${pct >= 100 ? "good" : ""}">${pct}%</span>`);
+    if (d.totalBytes) meta.push(`<span>${fmtBytes(d.downloadedBytes)} / ${fmtBytes(d.totalBytes)}</span>`);
+    meta.push(`<span>↓ ${fmtSpeed(d.speed)}</span>`);
+    if (d.status === "downloading" && d.eta) meta.push(`<span class="warn">eta ${fmtEta(d.eta)}</span>`);
+    meta.push(`<span>${d.peers} peer${d.peers === 1 ? "" : "s"}</span>`);
+    const actions = [];
+    if (d.status === "downloading" || d.status === "queued")
+      actions.push(`<button data-act="pause" data-id="${esc(d.id)}">Pause</button>`);
+    if (d.status === "paused")
+      actions.push(`<button data-act="resume" data-id="${esc(d.id)}">Resume</button>`);
+    actions.push(`<button class="danger" data-act="delete" data-id="${esc(d.id)}">Delete</button>`);
+    return `
+      <div class="row">
+        <div class="row-top"><span class="name" title="${esc(d.name)}">${esc(d.name)}</span>${chip(d.status)}</div>
+        <div class="meter"><i style="width:${pct}%"></i></div>
+        <div class="meta">${meta.join("")}</div>
+        <div class="actions">${actions.join("")}</div>
+      </div>`;
+  }).join("");
+}
+
+function renderSeeds() {
+  const el = $("#sec-seeding");
+  const items = state.seeds;
+  if (!items.length) {
+    el.innerHTML = `<div class="empty">not seeding anything<br>finished downloads seed automatically unless you stop them</div>`;
+    return;
+  }
+  el.innerHTML = items.map((s) => `
+    <div class="row">
+      <div class="row-top"><span class="name" title="${esc(s.name)}">${esc(s.name)}</span>${chip(s.status)}</div>
+      <div class="meta">
+        <span class="good">↑ ${fmtBytes(s.uploaded)} shared</span>
+        <span>${s.peers} peer${s.peers === 1 ? "" : "s"}</span>
+      </div>
+      <div class="actions">
+        ${s.status === "seeding" ? `<button data-act="stop-seed" data-id="${esc(s.id)}">Stop seeding</button>` : ""}
+        <button class="danger" data-act="delete" data-id="${esc(s.id)}">Delete</button>
+      </div>
+    </div>`).join("");
+}
+
+function renderHistory() {
+  const el = $("#sec-completed");
+  const items = state.history;
+  if (!items.length) {
+    el.innerHTML = `<div class="empty">nothing completed yet</div>`;
+    return;
+  }
+  el.innerHTML = items.map((h) => `
+    <div class="row">
+      <div class="row-top"><span class="name" title="${esc(h.name)}">${esc(h.name)}</span>${chip("seeding" === (state.seeds.find((x) => x.id === h.id) ?? {}).status ? "seeding" : "paused")}</div>
+      <div class="meta">
+        ${h.sizeBytes ? `<span>${fmtBytes(h.sizeBytes)}</span>` : ""}
+        <span>finished ${fmtAgo(h.completedAt)}</span>
+      </div>
+    </div>`).join("");
+}
+
+function render() {
+  renderDownloads();
+  renderSeeds();
+  renderHistory();
+  const active = state.downloads.filter((d) => d.status === "downloading").length;
+  const totalSpeed = state.downloads.reduce((sum, d) => sum + (d.speed || 0), 0);
+  const seeding = state.seeds.filter((s) => s.status === "seeding").length;
+  $("#st-active").textContent = String(active);
+  $("#st-speed").textContent = totalSpeed > 0 ? fmtSpeed(totalSpeed) : "–";
+  $("#st-seeds").textContent = String(seeding);
+}
+</script>
+<script>
+"use strict";
+
+// ---- live updates (SSE with polling fallback) ------------------------------
+let pollTimer = null;
+
+async function refreshOnce() {
+  try {
+    const snap = await api("/downloads");
+    state.downloads = snap.downloads ?? [];
+    state.seeds = snap.seeds ?? [];
+    render();
+    setConnected(true, "polling");
+  } catch (err) {
+    if (!requireToken(err)) setConnected(false);
+  }
+}
+
+function startPolling() {
+  if (pollTimer) return;
+  setConnected(true, "polling");
+  void refreshOnce();
+  pollTimer = setInterval(refreshOnce, 3000);
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function loadHistory() {
+  try {
+    const res = await api("/history");
+    state.history = res.history ?? [];
+    render();
+  } catch (err) { requireToken(err); }
+}
+
+function connectEvents() {
+  stopPolling();
+  const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+  const es = new EventSource(`/events${qs}`);
+
+  es.onopen = () => { setConnected(true, "live"); };
+  es.onmessage = (ev) => {
+    try {
+      const snap = JSON.parse(ev.data);
+      state.downloads = snap.downloads ?? [];
+      state.seeds = snap.seeds ?? [];
+      render();
+      setConnected(true, "live");
+    } catch {}
+  };
+  es.onerror = () => {
+    es.close();
+    setConnected(false);
+    // A dead stream usually means the daemon restarted or the token changed;
+    // fall back to polling so the page keeps working either way.
+    setTimeout(startPolling, 1500);
+  };
+}
+
+// ---- actions ---------------------------------------------------------------
+async function control(id, action) {
+  try {
+    await api("/control", { method: "POST", body: JSON.stringify({ id, action }) });
+  } catch (err) {
+    if (!requireToken(err)) toast(`failed: ${err.message}`, true);
+  }
+}
+
+document.addEventListener("click", (ev) => {
+  const btn = ev.target.closest("button[data-act]");
+  if (!btn || btn.dataset.busy) return;
+  const { act, id } = btn.dataset;
+
+  // Two-step confirm for destructive deletes; any other click resets it.
+  if (act === "delete" && !btn.classList.contains("confirm")) {
+    document.querySelectorAll("button.danger.confirm").forEach((b) => {
+      b.classList.remove("confirm"); b.textContent = "Delete";
+    });
+    btn.classList.add("confirm");
+    btn.textContent = "Sure?";
+    setTimeout(() => { btn.classList.remove("confirm"); btn.textContent = "Delete"; }, 2600);
+    return;
+  }
+
+  if (act === "pause" || act === "resume" || act === "stop-seed") {
+    btn.disabled = true;
+    void control(id, act).then(() => { btn.disabled = false; });
+  }
+  if (act === "delete") void control(id, "delete");
+});
+
+// ---- add form --------------------------------------------------------------
+$("#add-form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const input = $("#add-input");
+  const value = input.value.trim();
+  if (!value) return;
+  $("#add-btn").disabled = true;
+  try {
+    const res = await api("/add", { method: "POST", body: JSON.stringify({ magnet: value }) });
+    toast(res.outcome === "duplicate" ? "already in the queue" : "added to downloads");
+    input.value = "";
+  } catch (err) {
+    requireToken(err) || toast(err.message === "invalid magnet or info hash"
+      ? "that doesn't look like a magnet or info hash" : `failed: ${err.message}`, true);
+  } finally {
+    $("#add-btn").disabled = false;
+  }
+});
+
+// ---- tabs ------------------------------------------------------------------
+$("#tabs").addEventListener("click", (ev) => {
+  const btn = ev.target.closest("button[data-tab]");
+  if (!btn) return;
+  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("active", b === btn));
+  for (const sec of ["downloads", "seeding", "completed"]) {
+    $(`#sec-${sec}`).hidden = sec !== btn.dataset.tab;
+  }
+  if (btn.dataset.tab === "completed") void loadHistory();
+});
+
+// ---- token gate ------------------------------------------------------------
+$("#gate-save").addEventListener("click", () => {
+  token = $("#gate-input").value.trim();
+  localStorage.setItem("torhunt-token", token);
+  $("#gate").hidden = true;
+  connectEvents();
+});
+
+$("#gate-input").addEventListener("keydown", (ev) => {
+  if (ev.key === "Enter") $("#gate-save").click();
+});
+
+// ---- boot ------------------------------------------------------------------
+void refreshOnce().then(() => {
+  // First snapshot decides whether we can hold a live stream or need a token.
+  if ($("#gate").hidden && "EventSource" in window) connectEvents();
+});
+</script>
+</body>
+</html>
+
+
+
+
+
+
