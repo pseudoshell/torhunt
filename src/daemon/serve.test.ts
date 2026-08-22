@@ -70,6 +70,14 @@ describe("handleApi", () => {
     expect(res.body.ok).toBe(true);
   });
 
+  it("includes the configured TUI theme on /health", async () => {
+    const res = await handleApi(runtime, "tok", "GET", "/health", undefined, "");
+    expect(res.status).toBe(200);
+    const theme = res.body.theme as { id: string; name: string; colors: Record<string, string> };
+    expect(typeof theme.id).toBe("string");
+    expect(typeof theme.colors.accent).toBe("string");
+  });
+
   it("401s a protected route without a token", async () => {
     const res = await handleApi(runtime, "tok", "POST", "/add", undefined, `{"magnet":"${MAGNET}"}`);
     expect(res.status).toBe(401);

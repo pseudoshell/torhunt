@@ -13,6 +13,8 @@ import { startSeedReaper } from "./seed-reaper";
 import { LOOPBACK_HOSTS, isAuthorized, hostHeaderOk } from "./auth";
 import { loadUiHtml, openEventStream, originAllowed } from "./webui";
 import { searchTorrents } from "./websearch";
+import { loadConfig } from "../config/config";
+import { THEMES } from "../ui/theme";
 import { VERSION } from "../version";
 
 export { isAuthorized } from "./auth";
@@ -180,7 +182,19 @@ export async function handleApi(
   search: typeof searchTorrents = searchTorrents,
 ): Promise<ApiResponse> {
   if (method === "GET" && urlPath === "/health") {
-    return { status: 200, body: { ok: true, version: VERSION } };
+    // The configured TUI theme rides along so the web remote can mirror the
+    // terminal's look. Read fresh from disk on every call: a theme switched in
+    // the TUI reaches an already-running daemon here without a restart.
+    const cfg = await loadConfig();
+    const theme = THEMES.find((t) => t.id === cfg.theme) ?? THEMES[0]!;
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        version: VERSION,
+        theme: { id: theme.id, name: theme.name, colors: theme.colors },
+      },
+    };
   }
   if (!isAuthorized(token, authHeader)) {
     return { status: 401, body: { error: "unauthorized" } };

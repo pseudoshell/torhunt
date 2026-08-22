@@ -7,56 +7,32 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script>
-(function () {
-  try {
-    var t = localStorage.getItem("torhunt-theme");
-    if (!t) t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    if (t === "dark") document.documentElement.classList.add("dark");
-  } catch (e) {}
-})();
-</script>
 <style>
   :root {
-    color-scheme: light;
-    --background: #ffffff;
-    --foreground: #09090b;
-    --card: #ffffff;
-    --muted: #f4f4f5;
-    --muted-foreground: #71717a;
-    --border: #e4e4e7;
-    --input: #e4e4e7;
-    --ring: #71717a;
-    --primary: #18181b;
-    --primary-foreground: #fafafa;
-    --glass: rgba(255, 255, 255, 0.82);
-    --success: #16a34a;
-    --warning: #d97706;
-    --destructive: #dc2626;
-    --blue: #2563eb;
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+    color-scheme: dark;
+    /* Fallback palette mirrors the app's default "Electric Cyan" theme. The
+       daemon pushes whichever TUI theme is configured onto these variables at
+       runtime (syncTheme polls /health), so switching themes in the terminal
+       re-skins this page within seconds — no restart, no toggle here. */
+    --background: #032845;
+    --foreground: #e6f9ff;
+    --card: #0e324e;
+    --muted: #1e415b;
+    --muted-foreground: #7ba7bd;
+    --border: #1e4d61;
+    --input: #1e4d61;
+    --ring: #00e5ff;
+    --primary: #00e5ff;
+    --primary-foreground: #032845;
+    --glass: rgba(3, 40, 69, 0.86);
+    --success: #00ff9d;
+    --warning: #ffd166;
+    --destructive: #ff3864;
+    --blue: #00ffcc;
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.25);
     --radius: 10px;
     --font-sans: "Geist", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
-  }
-  .dark {
-    color-scheme: dark;
-    --background: #0a0a0b;
-    --foreground: #fafafa;
-    --card: #121214;
-    --muted: #202024;
-    --muted-foreground: #a1a1aa;
-    --border: #27272a;
-    --input: #2e2e33;
-    --ring: #52525b;
-    --primary: #fafafa;
-    --primary-foreground: #18181b;
-    --glass: rgba(10, 10, 11, 0.78);
-    --success: #22c55e;
-    --warning: #f59e0b;
-    --destructive: #ef4444;
-    --blue: #3b82f6;
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -111,16 +87,68 @@
   .conn-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted-foreground); }
   .conn.on .conn-dot { background: var(--success); animation: pulse-dot 2.4s ease-in-out infinite; }
   @keyframes pulse-dot { 50% { opacity: 0.35; } }
-  .icon-btn {
-    width: 32px; height: 32px; display: grid; place-items: center;
-    border-radius: 8px; color: var(--muted-foreground); border: 1px solid transparent;
-    transition: background 0.15s, color 0.15s;
+  .select { position: relative; flex: none; }
+
+  .select-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    height: 36px;
+    min-width: 150px;
+    padding: 0 11px;
+    border: 1px solid var(--input);
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--foreground);
+    background: transparent;
+    transition: border-color 0.15s, background 0.15s;
   }
-  .icon-btn:hover { background: var(--muted); color: var(--foreground); }
-  .icon-btn svg { width: 15px; height: 15px; }
-  .icon-sun { display: none; }
-  .dark .icon-sun { display: block; }
-  .dark .icon-moon { display: none; }
+
+  .select-btn:hover { background: var(--muted); }
+  .select-btn svg { width: 13px; height: 13px; color: var(--muted-foreground); transition: transform 0.15s; }
+  .select.open .select-btn svg { transform: rotate(180deg); }
+
+  .select-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 100%;
+    z-index: 25;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+    padding: 4px;
+  }
+  .select-menu[hidden] { display: none; }
+
+  .select-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    text-align: left;
+    color: var(--muted-foreground);
+    transition: background 0.1s, color 0.1s;
+  }
+
+  .select-item:hover { background: var(--muted); color: var(--foreground); }
+  .select-item.selected { color: var(--foreground); font-weight: 500; }
+  .select-item.selected::after {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 0 6px var(--primary);
+  }
   .main {
     max-width: 760px; margin: 0 auto;
     padding: 18px 16px 0; display: grid; gap: 14px;
@@ -269,10 +297,6 @@
     <span class="pill-remote">remote</span>
     <div class="spacer"></div>
     <div class="conn" id="conn"><span class="conn-dot"></span><span id="conn-label">offline</span></div>
-    <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme">
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-    </button>
   </div>
 </header>
 
@@ -281,13 +305,13 @@
     <div class="card-h">Search torrents</div>
     <form class="field-row" id="search-form">
       <input class="input" id="search-input" type="text" autocomplete="off" spellcheck="false" placeholder="Search movies, tv, anime, games…">
-      <select class="input" id="search-cat" aria-label="Category">
-        <option value="">All categories</option>
-        <option>Movies</option>
-        <option>TV</option>
-        <option>Anime</option>
-        <option>Games</option>
-      </select>
+      <div class="select" id="cat-select">
+        <button type="button" class="select-btn" id="cat-btn" aria-haspopup="listbox" aria-expanded="false">
+          <span id="cat-label">All categories</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="select-menu" id="cat-menu" role="listbox" aria-label="Category" hidden></div>
+      </div>
       <button class="btn btn-primary" type="submit" id="search-btn">Search</button>
     </form>
     <div class="hint" id="search-status">Queries the same indexers as the terminal app, in parallel.</div>
@@ -651,7 +675,7 @@ $("#search-form").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const q = $("#search-input").value.trim();
   if (!q) return;
-  const cat = $("#search-cat").value;
+  const cat = catValue;
   const btn = $("#search-btn");
   btn.disabled = true;
   $("#search-status").textContent = "Searching sources…";
@@ -702,10 +726,109 @@ $("#tabs").addEventListener("click", (ev) => {
   if (btn.dataset.tab === "completed") void loadHistory();
 });
 
-$("#theme-toggle").addEventListener("click", () => {
-  const dark = document.documentElement.classList.toggle("dark");
-  try { localStorage.setItem("torhunt-theme", dark ? "dark" : "light"); } catch {}
+// ---- category select (custom listbox, no native control) --------------------
+const CAT_OPTIONS = [
+  { value: "", label: "All categories" },
+  { value: "Movies", label: "Movies" },
+  { value: "TV", label: "TV" },
+  { value: "Anime", label: "Anime" },
+  { value: "Games", label: "Games" },
+];
+let catValue = "";
+
+function renderCatMenu() {
+  $("#cat-menu").innerHTML = CAT_OPTIONS.map((o) =>
+    '<button type="button" class="select-item' + (o.value === catValue ? " selected" : "")
+    + '" role="option" aria-selected="' + (o.value === catValue)
+    + '" data-value="' + o.value + '">' + esc(o.label) + "</button>"
+  ).join("");
+}
+
+function closeCatMenu() {
+  $("#cat-menu").hidden = true;
+  $("#cat-select").classList.remove("open");
+  $("#cat-btn").setAttribute("aria-expanded", "false");
+}
+
+$("#cat-btn").addEventListener("click", () => {
+  const menu = $("#cat-menu");
+  const open = menu.hidden;
+  menu.hidden = !open;
+  $("#cat-select").classList.toggle("open", open);
+  $("#cat-btn").setAttribute("aria-expanded", String(open));
 });
+
+$("#cat-menu").addEventListener("click", (ev) => {
+  const item = ev.target.closest(".select-item");
+  if (!item) return;
+  catValue = item.dataset.value ?? "";
+  $("#cat-label").textContent = (CAT_OPTIONS.find((o) => o.value === catValue) ?? CAT_OPTIONS[0]).label;
+  renderCatMenu();
+  closeCatMenu();
+});
+
+document.addEventListener("click", (ev) => {
+  if (!ev.target.closest("#cat-select")) closeCatMenu();
+});
+
+document.addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape") closeCatMenu();
+});
+
+renderCatMenu();
+
+// ---- theme mirror --------------------------------------------------------------
+// The TUI is the source of truth for theming. /health reports the configured
+// theme fresh from disk on every call, so a theme switched in the terminal
+// re-skins this page within a few seconds — no restart needed.
+function hexToRgb(hex) {
+  let h = String(hex ?? "").replace("#", "");
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function mixHex(base, other, pct) {
+  const a = hexToRgb(base), b = hexToRgb(other);
+  return "#" + a.map((v, i) =>
+    Math.round(v + (b[i] - v) * pct).toString(16).padStart(2, "0")).join("");
+}
+
+function applyAppTheme(theme) {
+  const c = theme.colors ?? {};
+  if (!c.shade || !c.text) return;
+  const root = document.documentElement.style;
+  root.setProperty("--background", c.shade);
+  root.setProperty("--foreground", c.text);
+  root.setProperty("--card", mixHex(c.shade, c.text, 0.05));
+  root.setProperty("--muted", mixHex(c.shade, c.text, 0.12));
+  root.setProperty("--muted-foreground", c.paused || mixHex(c.shade, c.text, 0.55));
+  root.setProperty("--border", c.rule || mixHex(c.shade, c.text, 0.18));
+  root.setProperty("--input", c.rule || mixHex(c.shade, c.text, 0.18));
+  root.setProperty("--ring", c.accent);
+  root.setProperty("--primary", c.accent);
+  root.setProperty("--primary-foreground", c.shade);
+  root.setProperty("--success", c.good);
+  root.setProperty("--warning", c.warn);
+  root.setProperty("--destructive", c.bad);
+  root.setProperty("--blue", c.sprout || c.alt);
+  const rgb = hexToRgb(c.shade);
+  root.setProperty("--glass", "rgba(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + ",0.86)");
+}
+
+let appliedThemeId = null;
+
+async function syncTheme() {
+  try {
+    const res = await fetch("/health");
+    if (!res.ok) return;
+    const body = await res.json();
+    const theme = body.theme;
+    if (!theme || !theme.id || theme.id === appliedThemeId) return;
+    appliedThemeId = theme.id;
+    applyAppTheme(theme);
+  } catch {}
+}
 
 $("#gate-save").addEventListener("click", () => {
   token = $("#gate-input").value.trim();
@@ -719,6 +842,8 @@ $("#gate-input").addEventListener("keydown", (ev) => {
 });
 
 // ---- boot ----------------------------------------------------------------------------
+void syncTheme();
+setInterval(syncTheme, 4000);
 void refreshOnce().then(() => {
   if ($("#gate").hidden && "EventSource" in window) connectEvents();
 });
