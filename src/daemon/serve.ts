@@ -12,6 +12,7 @@ import { startRuntime, addInput, type Runtime } from "./runtime";
 import { startSeedReaper } from "./seed-reaper";
 import { LOOPBACK_HOSTS, isAuthorized, hostHeaderOk } from "./auth";
 import { loadUiHtml, openEventStream, originAllowed } from "./webui";
+import { searchTorrents } from "./websearch";
 import { VERSION } from "../version";
 
 export { isAuthorized } from "./auth";
@@ -166,6 +167,8 @@ function historyPayload(runtime: Runtime): Record<string, unknown> {
 }
 
 // Pure request router — no node:http types, so it's trivially testable.
+// `query` carries the URL's search params (only /search reads them today) and
+// `search` is injectable so tests never touch the network.
 export async function handleApi(
   runtime: Runtime,
   token: string | null,
@@ -173,6 +176,8 @@ export async function handleApi(
   urlPath: string,
   authHeader: string | undefined,
   bodyText: string,
+  query?: URLSearchParams,
+  search: typeof searchTorrents = searchTorrents,
 ): Promise<ApiResponse> {
   if (method === "GET" && urlPath === "/health") {
     return { status: 200, body: { ok: true, version: VERSION } };
@@ -185,6 +190,23 @@ export async function handleApi(
   }
   if (method === "GET" && urlPath === "/history") {
     return { status: 200, body: historyPayload(runtime) };
+  }
+  if (method === "GET" && urlPath === "/search") {
+    const q = (query?.get("q") ?? "").trim();
+    if (!q) return { status: 400, body: { error: "missing q" } };
+    const rawCat = query?.get("cat") ?? "";
+    const category =
+      rawCat === "Games" || rawCat === "Movies" || rawCat === "TV" || rawCat === "Anime"
+        ? rawCat
+        : null;
+    try {
+      const outcome = await search(q, category);
+      return { status: 200, body: { results: outcome.results, failed: outcome.failed } };
+    } catch {
+      // searchTorrents already absorbs per-source failures; reaching here means
+      // something systemic went wrong (e.g. the deadline itself threw).
+      return { status: 504, body: { error: "search failed" } };
+    }
   }
   if (method === "POST" && urlPath === "/add") {
     const magnet = extractMagnet(bodyText);
@@ -247,6 +269,7 @@ export function createServeHandler(
   runtime: Runtime,
   token: string | null,
   logFn: (message: string) => void = log,
+  searchFn: typeof searchTorrents = searchTorrents,
 ): (req: http.IncomingMessage, res: http.ServerResponse) => void {
   return (req, res) => {
     void (async () => {
@@ -311,7 +334,16 @@ export function createServeHandler(
       const bodyText = body.text;
       let out: ApiResponse;
       try {
-        out = await handleApi(runtime, token, method, urlPath, req.headers.authorization, bodyText);
+        out = await handleApi(
+          runtime,
+          token,
+          method,
+          urlPath,
+          req.headers.authorization,
+          bodyText,
+          url.searchParams,
+          searchFn,
+        );
       } catch {
         out = { status: 500, body: { error: "internal error" } };
       }

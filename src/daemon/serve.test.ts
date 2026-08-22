@@ -144,6 +144,30 @@ describe("handleApi", () => {
       history: [{ id: HASH, name: "Done", sizeBytes: 1234, completedAt }],
     });
   });
+
+  it("400s /search without a query", async () => {
+    const res = await handleApi(runtime, null, "GET", "/search", undefined, "");
+    expect(res.status).toBe(400);
+  });
+
+  it("runs an injected search and validates the category", async () => {
+    const search = vi.fn().mockResolvedValue({ results: [], failed: [] });
+    runtime.queue = { getItems: () => [], getSeeds: () => [] } as unknown as Runtime["queue"];
+
+    const ok = await handleApi(
+      runtime, null, "GET", "/search", undefined, "",
+      new URLSearchParams("q=ubuntu&cat=Movies"), search,
+    );
+    expect(ok.status).toBe(200);
+    expect(search).toHaveBeenCalledWith("ubuntu", "Movies");
+
+    const bogus = await handleApi(
+      runtime, null, "GET", "/search", undefined, "",
+      new URLSearchParams("q=ubuntu&cat=Bogus"), search,
+    );
+    expect(bogus.status).toBe(200);
+    expect(search).toHaveBeenLastCalledWith("ubuntu", null);
+  });
 });
 
 describe("createServeHandler (web remote routes)", () => {
@@ -161,9 +185,13 @@ describe("createServeHandler (web remote routes)", () => {
     }) as unknown as Runtime["queue"];
   }
 
-  function start(token: string | null, queue: Runtime["queue"]): Promise<string> {
+  function start(
+    token: string | null,
+    queue: Runtime["queue"],
+    searchFn?: Parameters<typeof createServeHandler>[3],
+  ): Promise<string> {
     const runtime = { queue, downloadDir: "unused" } as unknown as Runtime;
-    server = http.createServer(createServeHandler(runtime, token, () => {}));
+    server = http.createServer(createServeHandler(runtime, token, () => {}, searchFn));
     return new Promise((resolve) => {
       server.listen(0, "127.0.0.1", () =>
         resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`),
@@ -267,6 +295,20 @@ describe("createServeHandler (web remote routes)", () => {
     const res = await fetch(`${base}/history`);
     expect(res.status).toBe(200);
     expect(((await res.json()) as { history: unknown[] }).history).toHaveLength(1);
+  });
+
+  it("wires /search end to end with the query string", async () => {
+    const searchFn = vi.fn().mockResolvedValue({
+      results: [{ infoHash: HASH, name: "Result", sizeBytes: 1, seeders: 2, leechers: 0, source: "yts", magnet: MAGNET }],
+      failed: ["EZTV"],
+    });
+    const base = await start(null, fakeQueue(), searchFn);
+    const res = await fetch(`${base}/search?q=film&cat=Movies`);
+    expect(res.status).toBe(200);
+    expect(searchFn).toHaveBeenCalledWith("film", "Movies");
+    const body = (await res.json()) as { results: unknown[]; failed: string[] };
+    expect(body.results).toHaveLength(1);
+    expect(body.failed).toEqual(["EZTV"]);
   });
 });
 

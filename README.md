@@ -55,7 +55,7 @@ torhunt files          range-aware HTTP server for media streaming
 torhunt attach         persistent tmux session for remote SSH usage
 ```
 
-Append `--daemon` to run `watch`, `serve`, or `files` as background processes. `torhunt serve` also ships a built-in **web remote**: open `http://127.0.0.1:9161/` in any browser (phone included) to add magnets, watch progress live, pause/resume, and manage seeding. Run with `--token` when exposing the port beyond loopback. Run `torhunt --help` for all commands and flags.
+Append `--daemon` to run `watch`, `serve`, or `files` as background processes. `torhunt serve` also ships a built-in **web remote**: open `http://127.0.0.1:9161/` in any browser (phone included) to search all indexers, add magnets or info hashes, watch progress live, pause/resume, and manage seeding. Run with `--token` when exposing the port beyond loopback. Run `torhunt --help` for all commands and flags.
 
 ## Privacy & security
 

@@ -151,7 +151,6 @@
     font-weight: 400;
   }
 </style>
-</head>
 <style>
   /* ---------- add bar ---------- */
   .add-row {
@@ -442,6 +441,46 @@
     .name { flex-basis: 100%; order: -1; white-space: normal; }
   }
 </style>
+<style>
+  /* ---------- search tab ---------- */
+  .add-row select {
+    font: inherit;
+    font-size: 12px;
+    color: var(--bright);
+    background: var(--shade-deep);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 10px 6px;
+    outline: none;
+    cursor: pointer;
+    flex: none;
+  }
+
+  .add-row select:focus { border-color: var(--accent); }
+
+  #search-status {
+    padding: 0 14px 11px;
+    font-size: 10.5px;
+    color: var(--paused);
+    letter-spacing: 0.3px;
+  }
+
+  .meta .src {
+    color: var(--alt);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-size: 9.5px;
+    border: 1px solid rgba(30, 77, 97, 0.9);
+    border-radius: 99px;
+    padding: 2px 8px;
+  }
+
+  .actions button.added {
+    color: var(--good);
+    border-color: rgba(0, 255, 157, 0.4);
+    cursor: default;
+  }
+</style>
 </head>
 <body>
 <header>
@@ -471,12 +510,30 @@
   </div>
 
   <nav class="tabs" id="tabs">
-    <button data-tab="downloads" class="active">Downloads</button>
+    <button data-tab="search" class="active">Search</button>
+    <button data-tab="downloads">Downloads</button>
     <button data-tab="seeding">Seeding</button>
     <button data-tab="completed">Completed</button>
   </nav>
 
-  <section class="list panel" id="sec-downloads"></section>
+  <section id="sec-search" class="panel">
+    <form class="add-row" id="search-form">
+      <input id="search-input" type="text" autocomplete="off" spellcheck="false"
+             placeholder="search movies, tv, anime, games…">
+      <select id="search-cat" aria-label="category">
+        <option value="">All</option>
+        <option>Movies</option>
+        <option>TV</option>
+        <option>Anime</option>
+        <option>Games</option>
+      </select>
+      <button class="primary" type="submit" id="search-btn">Search</button>
+    </form>
+    <div id="search-status">queries the same indexers as the terminal app, in parallel</div>
+    <div class="list" id="search-results"></div>
+  </section>
+
+  <section class="list panel" id="sec-downloads" hidden></section>
   <section class="list panel" id="sec-seeding" hidden></section>
   <section class="list panel" id="sec-completed" hidden></section>
 </main>
@@ -497,7 +554,14 @@
 "use strict";
 
 // ---- state -----------------------------------------------------------------
-const state = { downloads: [], seeds: [], history: [], tab: "downloads" };
+const state = {
+  downloads: [],
+  seeds: [],
+  history: [],
+  results: [],
+  resultByHash: {},
+  tab: "search",
+};
 let token = localStorage.getItem("torhunt-token") || "";
 
 // ---- tiny helpers ----------------------------------------------------------
@@ -668,12 +732,38 @@ function render() {
   renderDownloads();
   renderSeeds();
   renderHistory();
+  renderSearch();
   const active = state.downloads.filter((d) => d.status === "downloading").length;
   const totalSpeed = state.downloads.reduce((sum, d) => sum + (d.speed || 0), 0);
   const seeding = state.seeds.filter((s) => s.status === "seeding").length;
   $("#st-active").textContent = String(active);
   $("#st-speed").textContent = totalSpeed > 0 ? fmtSpeed(totalSpeed) : "–";
   $("#st-seeds").textContent = String(seeding);
+}
+
+// ---- search ----------------------------------------------------------------
+function renderSearch() {
+  const el = $("#search-results");
+  const items = state.results;
+  if (!items.length) { el.innerHTML = ""; return; }
+  el.innerHTML = items.map((r) => `
+    <div class="row">
+      <div class="row-top"><span class="name" title="${esc(r.name)}">${esc(r.name)}</span></div>
+      <div class="meta">
+        ${r.sizeBytes ? `<span>${fmtBytes(r.sizeBytes)}</span>` : ""}
+        <span class="good">▲ ${r.seeders} seeders</span>
+        <span>▼ ${r.leechers}</span>
+        <span class="src">${esc(sourceLabel(r.source))}</span>
+      </div>
+      <div class="actions"><button data-dl="${esc(r.infoHash)}">Download</button></div>
+    </div>`).join("");
+}
+
+// Source ids read like "x1337-tv"; show the site part for the tag.
+function sourceLabel(id) {
+  const s = String(id ?? "");
+  const cut = s.replace(/-(movies|tv)$/, "");
+  return cut === "x1337" ? "1337x" : cut === "tpb" ? "TPB" : cut;
 }
 </script>
 <script>
@@ -747,6 +837,27 @@ async function control(id, action) {
 }
 
 document.addEventListener("click", (ev) => {
+  // One-click download from search results.
+  const dl = ev.target.closest("button[data-dl]");
+  if (dl && !dl.disabled) {
+    const r = state.resultByHash[dl.dataset.dl];
+    if (!r) return;
+    dl.disabled = true;
+    dl.textContent = "Adding…";
+    api("/add", { method: "POST", body: JSON.stringify({ magnet: r.magnet }) })
+      .then((res) => {
+        dl.classList.add("added");
+        dl.textContent = res.outcome === "duplicate" ? "Already queued" : "Queued ✓";
+        toast(res.outcome === "duplicate" ? "already in the queue" : "added to downloads");
+      })
+      .catch((err) => {
+        if (!requireToken(err)) toast(`failed: ${err.message}`, true);
+        dl.disabled = false;
+        dl.textContent = "Download";
+      });
+    return;
+  }
+
   const btn = ev.target.closest("button[data-act]");
   if (!btn || btn.dataset.busy) return;
   const { act, id } = btn.dataset;
@@ -788,12 +899,39 @@ $("#add-form").addEventListener("submit", async (ev) => {
   }
 });
 
+// ---- search form -----------------------------------------------------------
+$("#search-form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const q = $("#search-input").value.trim();
+  if (!q) return;
+  const cat = $("#search-cat").value;
+  const btn = $("#search-btn");
+  btn.disabled = true;
+  $("#search-status").textContent = "searching sources…";
+  try {
+    const params = new URLSearchParams({ q });
+    if (cat) params.set("cat", cat);
+    const res = await api(`/search?${params}`);
+    state.results = res.results ?? [];
+    state.resultByHash = Object.fromEntries(state.results.map((r) => [r.infoHash, r]));
+    renderSearch();
+    const failed = res.failed ?? [];
+    $("#search-status").textContent =
+      `${state.results.length} result${state.results.length === 1 ? "" : "s"}` +
+      (failed.length ? ` · unreachable: ${failed.join(", ")}` : "");
+  } catch (err) {
+    requireToken(err) || ($("#search-status").textContent = `search failed: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 // ---- tabs ------------------------------------------------------------------
 $("#tabs").addEventListener("click", (ev) => {
   const btn = ev.target.closest("button[data-tab]");
   if (!btn) return;
   document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("active", b === btn));
-  for (const sec of ["downloads", "seeding", "completed"]) {
+  for (const sec of ["search", "downloads", "seeding", "completed"]) {
     $(`#sec-${sec}`).hidden = sec !== btn.dataset.tab;
   }
   if (btn.dataset.tab === "completed") void loadHistory();
